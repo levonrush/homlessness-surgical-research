@@ -1,0 +1,37 @@
+---
+title: "Impact of homelessness on surgical outcomes"
+output: html_notebook
+---
+
+
+
+# Env set-up
+
+```{r}
+# load libraries
+library(googlesheets4)
+library(googledrive)
+library(tidyverse)
+library(janitor)
+library(skimr)
+
+
+# authenticate with google drive
+drive_auth()
+```
+
+# Data load, clean and feature engineering
+
+```{r}
+
+```
+
+# Analysis
+
+```{r}
+
+```
+
+
+
+
