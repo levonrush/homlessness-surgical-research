@@ -15,7 +15,6 @@ library(tidyverse)
 library(janitor)
 library(skimr)
 
-
 # authenticate with google drive
 drive_auth()
 ```
@@ -23,7 +22,19 @@ drive_auth()
 # Data load, clean and feature engineering
 
 ```{r}
+domiciled <- drive_get("Homeless Data") %>%
+  read_sheet(range = "Domiciled") %>%
+  mutate(status = "domiciled") %>%
+  clean_names()
 
+homeless <- drive_get("Homeless Data") %>%
+  read_sheet(range = "Homeless") %>%
+  mutate(status = "homeless") %>%
+  clean_names()
+
+data <- bind_rows(domiciled, homeless)
+
+skim(data)
 ```
 
 # Analysis

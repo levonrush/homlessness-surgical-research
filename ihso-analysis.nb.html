@@ -219,17 +219,75 @@ pre code {
 <h1>Env set-up</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBsb2FkIGxpYnJhcmllc1xubGlicmFyeShnb29nbGVzaGVldHM0KVxubGlicmFyeShnb29nbGVkcml2ZSlcbmxpYnJhcnkodGlkeXZlcnNlKVxubGlicmFyeShqYW5pdG9yKVxubGlicmFyeShza2ltcilcblxuXG4jIGF1dGhlbnRpY2F0ZSB3aXRoIGdvb2dsZSBkcml2ZVxuZHJpdmVfYXV0aCgpXG5gYGAifQ== -->
-<pre class="r"><code># load libraries
-library(googlesheets4)
-library(googledrive)
-library(tidyverse)
-library(janitor)
-library(skimr)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBsb2FkIGxpYnJhcmllc1xuYGBgIn0= -->
+<pre class="r"><code># load libraries</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiV2FybmluZyBtZXNzYWdlczpcbjE6IE5vdCBhIHZhbGlkT2JqZWN0KCk6IG5vIHNsb3Qgb2YgbmFtZSBcImNvblwiIGZvciB0aGlzIG9iamVjdCBvZiBjbGFzcyBcIlNub3dmbGFrZURCQ29ubmVjdGlvblwiIFxuMjogTm90IGEgdmFsaWRPYmplY3QoKTogbm8gc2xvdCBvZiBuYW1lIFwiY29uXCIgZm9yIHRoaXMgb2JqZWN0IG9mIGNsYXNzIFwiU25vd2ZsYWtlREJDb25uZWN0aW9uXCIgXG4zOiBOb3QgYSB2YWxpZE9iamVjdCgpOiBubyBzbG90IG9mIG5hbWUgXCJjb25cIiBmb3IgdGhpcyBvYmplY3Qgb2YgY2xhc3MgXCJTbm93Zmxha2VEQkNvbm5lY3Rpb25cIiBcbiJ9 -->
+<pre><code>Warning messages:
+1: Not a validObject(): no slot of name &quot;con&quot; for this object of class &quot;SnowflakeDBConnection&quot; 
+2: Not a validObject(): no slot of name &quot;con&quot; for this object of class &quot;SnowflakeDBConnection&quot; 
+3: Not a validObject(): no slot of name &quot;con&quot; for this object of class &quot;SnowflakeDBConnection&quot; </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShnb29nbGVzaGVldHM0KVxubGlicmFyeShnb29nbGVkcml2ZSlcbmBgYCJ9 -->
+<pre class="r"><code>library(googlesheets4)
+library(googledrive)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG5BdHRhY2hpbmcgcGFja2FnZTog4oCYZ29vZ2xlZHJpdmXigJlcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDigJhwYWNrYWdlOmdvb2dsZXNoZWV0czTigJk6XG5cbiAgICByZXF1ZXN0X2dlbmVyYXRlLCByZXF1ZXN0X21ha2VcbiJ9 -->
+<pre><code>
+Attaching package: ‘googledrive’
+
+The following objects are masked from ‘package:googlesheets4’:
+
+    request_generate, request_make</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyverse)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUmVnaXN0ZXJlZCBTMyBtZXRob2RzIG92ZXJ3cml0dGVuIGJ5ICdkYnBseXInOlxuICBtZXRob2QgICAgICAgICBmcm9tXG4gIHByaW50LnRibF9sYXp5ICAgICBcbiAgcHJpbnQudGJsX3NxbCAgICAgIFxu4pSA4pSAIEF0dGFjaGluZyBwYWNrYWdlcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAgdGlkeXZlcnNlIDEuMy4xIOKUgOKUgFxu4pyTIGdncGxvdDIgMy4zLjUgICAgIOKckyBwdXJyciAgIDAuMy40XG7inJMgdGliYmxlICAzLjEuNCAgICAg4pyTIGRwbHlyICAgMS4wLjdcbuKckyB0aWR5ciAgIDEuMS4zICAgICDinJMgc3RyaW5nciAxLjQuMFxu4pyTIHJlYWRyICAgMS40LjAgICAgIOKckyBmb3JjYXRzIDAuNS4xXG7ilIDilIAgQ29uZmxpY3RzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCB0aWR5dmVyc2VfY29uZmxpY3RzKCkg4pSA4pSAXG54IGRwbHlyOjpmaWx0ZXIoKSAgICAgICAgICAgICAgICAgbWFza3Mgc3RhdHM6OmZpbHRlcigpXG54IGRwbHlyOjpsYWcoKSAgICAgICAgICAgICAgICAgICAgbWFza3Mgc3RhdHM6OmxhZygpXG54IGdvb2dsZWRyaXZlOjpyZXF1ZXN0X2dlbmVyYXRlKCkgbWFza3MgZ29vZ2xlc2hlZXRzNDo6cmVxdWVzdF9nZW5lcmF0ZSgpXG54IGdvb2dsZWRyaXZlOjpyZXF1ZXN0X21ha2UoKSAgICAgbWFza3MgZ29vZ2xlc2hlZXRzNDo6cmVxdWVzdF9tYWtlKClcbiJ9 -->
+<pre><code>Registered S3 methods overwritten by &#39;dbplyr&#39;:
+  method         from
+  print.tbl_lazy     
+  print.tbl_sql      
+── Attaching packages ─────────────────────────────────────────────────────────── tidyverse 1.3.1 ──
+✓ ggplot2 3.3.5     ✓ purrr   0.3.4
+✓ tibble  3.1.4     ✓ dplyr   1.0.7
+✓ tidyr   1.1.3     ✓ stringr 1.4.0
+✓ readr   1.4.0     ✓ forcats 0.5.1
+── Conflicts ────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+x dplyr::filter()                 masks stats::filter()
+x dplyr::lag()                    masks stats::lag()
+x googledrive::request_generate() masks googlesheets4::request_generate()
+x googledrive::request_make()     masks googlesheets4::request_make()</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShqYW5pdG9yKVxuYGBgIn0= -->
+<pre class="r"><code>library(janitor)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG5BdHRhY2hpbmcgcGFja2FnZTog4oCYamFuaXRvcuKAmVxuXG5UaGUgZm9sbG93aW5nIG9iamVjdHMgYXJlIG1hc2tlZCBmcm9tIOKAmHBhY2thZ2U6c3RhdHPigJk6XG5cbiAgICBjaGlzcS50ZXN0LCBmaXNoZXIudGVzdFxuIn0= -->
+<pre><code>
+Attaching package: ‘janitor’
+
+The following objects are masked from ‘package:stats’:
+
+    chisq.test, fisher.test</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShza2ltcilcblxuXG4jIGF1dGhlbnRpY2F0ZSB3aXRoIGdvb2dsZSBkcml2ZVxuZHJpdmVfYXV0aCgpXG5gYGAifQ== -->
+<pre class="r"><code>library(skimr)
 
 
 # authenticate with google drive
 drive_auth()</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiVGhlIGdvb2dsZWRyaXZlIHBhY2thZ2UgaXMgcmVxdWVzdGluZyBhY2Nlc3MgdG8geW91ciBHb29nbGUgYWNjb3VudC5cblNlbGVjdCBhIHByZS1hdXRob3Jpc2VkIGFjY291bnQgb3IgZW50ZXIgJzAnIHRvIG9idGFpbiBhIG5ldyB0b2tlbi5cblByZXNzIEVzYy9DdHJsICsgQyB0byBjYW5jZWwuXG4ifQ== -->
+<pre><code>The googledrive package is requesting access to your Google account.
+Select a pre-authorised account or enter &#39;0&#39; to obtain a new token.
+Press Esc/Ctrl + C to cancel.</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG4xOiBsZXZvbl9ydXNoQGhvdG1haWwuY29tXG4ifQ== -->
+<pre><code>
+1: levon_rush@hotmail.com</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuMVxuYGBgIn0= -->
+<pre class="r"><code>1</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -238,6 +296,53 @@ drive_auth()</code></pre>
 <h1>Data load, clean and feature engineering</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2tpbShkYXRhKVxuXG5gYGAifQ== -->
+<pre class="r"><code>skim(data)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoi4pSA4pSAIERhdGEgU3VtbWFyeSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgIFZhbHVlc1xuTmFtZSAgICAgICAgICAgICAgICAgICAgICAgZGF0YSAgXG5OdW1iZXIgb2Ygcm93cyAgICAgICAgICAgICAxNjkwMSBcbk51bWJlciBvZiBjb2x1bW5zICAgICAgICAgIDIwICAgIFxuX19fX19fX19fX19fX19fX19fX19fX18gICAgICAgICAgXG5Db2x1bW4gdHlwZSBmcmVxdWVuY3k6ICAgICAgICAgICBcbiAgY2hhcmFjdGVyICAgICAgICAgICAgICAgIDE0ICAgIFxuICBsaXN0ICAgICAgICAgICAgICAgICAgICAgMiAgICAgXG4gIG51bWVyaWMgICAgICAgICAgICAgICAgICA0ICAgICBcbl9fX19fX19fX19fX19fX19fX19fX19fXyAgICAgICAgIFxuR3JvdXAgdmFyaWFibGVzICAgICAgICAgICAgTm9uZSAgXG5cbuKUgOKUgCBWYXJpYWJsZSB0eXBlOiBjaGFyYWN0ZXIg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gICBza2ltX3ZhcmlhYmxlICAgIG5fbWlzc2luZyBjb21wbGV0ZV9yYXRlICAgbWluICAgbWF4IGVtcHR5IG5fdW5pcXVlIHdoaXRlc3BhY2VcbiAxIHVyX25vICAgICAgICAgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDkgICAgMTIgICAgIDAgICAgMTY3NjMgICAgICAgICAgMFxuIDIgc2V4ICAgICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMSAgICAgMSAgICAgMCAgICAgICAgMiAgICAgICAgICAwXG4gMyBwcmluY19keF9uYW1lICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICAzICAgMTMzICAgICAwICAgICAyNzU3ICAgICAgICAgIDBcbiA0IGFzc29jX2Rpc2Vhc2VzICAgICAgICAgODIyICAgICAgICAgMC45NTEgICAgIDcgICAyNTQgICAgIDAgICAgMTI1OTggICAgICAgICAgMFxuIDUgcHJpbmNfcHJvYyAgICAgICAgICAgICAxNzYgICAgICAgICAwLjk5MCAgICAgOCAgIDI1NCAgICAgMCAgICAgMzY1MCAgICAgICAgICAwXG4gNiBwcmluY19wcm9jX25hbWUgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICA4ICAgMTQ2ICAgICAwICAgICAxMTkxICAgICAgICAgIDBcbiA3IGF0dGVuZGluZ19kb2N0b3IgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDYgICAgMjMgICAgIDAgICAgICAyOTAgICAgICAgICAgMFxuIDggc3BlYyAgICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMiAgICAgMyAgICAgMCAgICAgICA0OCAgICAgICAgICAwXG4gOSBiZWQgICAgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICAyICAgICA2ICAgICAwICAgICAgNTIxICAgICAgICAgIDBcbjEwIGRpc2NoYXJnZV9zdGF0dXMgICAgICAgICAxICAgICAgICAgMS4wMCAgICAgMTEgICAgMzAgICAgIDAgICAgICAgMTIgICAgICAgICAgMFxuMTEgc3VidXJiICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMyAgICAyMCAgICAgMCAgICAgMTU2OSAgICAgICAgICAwXG4xMiBzdGF0ZSAgICAgICAgICAgICAgICAgIDEyMSAgICAgICAgIDAuOTkzICAgICAyICAgICAzICAgICAwICAgICAgICA5ICAgICAgICAgIDBcbjEzIGFkbWlzc19zb3VyY2UgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgMjAgICAgMjAgICAgIDAgICAgICAgIDEgICAgICAgICAgMFxuMTQgc3RhdHVzICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgOCAgICAgOSAgICAgMCAgICAgICAgMiAgICAgICAgICAwXG5cbuKUgOKUgCBWYXJpYWJsZSB0eXBlOiBsaXN0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICBza2ltX3ZhcmlhYmxlICAgICAgbl9taXNzaW5nIGNvbXBsZXRlX3JhdGUgbl91bmlxdWUgbWluX2xlbmd0aCBtYXhfbGVuZ3RoXG4xIHNlcnZpY2Vfc3RhcnRfZGF0ZSAgICAgICAgIDAgICAgICAgICAgICAgMSAgICAgMjIxMyAgICAgICAgICAxICAgICAgICAgIDFcbjIgc2VydmljZV9lbmRfZGF0ZSAgICAgICAgICAgMCAgICAgICAgICAgICAxICAgICAyMTg1ICAgICAgICAgIDEgICAgICAgICAgMVxuXG7ilIDilIAgVmFyaWFibGUgdHlwZTogbnVtZXJpYyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgc2tpbV92YXJpYWJsZSBuX21pc3NpbmcgY29tcGxldGVfcmF0ZSAgICBtZWFuICAgIHNkICAgIHAwICAgcDI1ICAgIHA1MCAgIHA3NSAgcDEwMCBoaXN0IFxuMSBhZ2UgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgNTcuOCAgIDIxLjMgICAgMTYgICAgMzggICA1OCAgICAgIDc1ICAgMTEwIOKWhuKWh+KWh+KWh+KWglxuMiBsb3MgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgIDguNDMgIDEyLjMgICAgIDEgICAgIDIgICAgNCAgICAgIDEwICAgMjk5IOKWh+KWgeKWgeKWgeKWgVxuMyBpY3VfaHJzICAgICAgICAgICAxNDM2MSAgICAgICAgIDAuMTUwICAxMTkuICAgMjAyLiAgICAgIDAgICAgMjQgICA1Mi41ICAgMTIyICAzOTcyIOKWh+KWgeKWgeKWgeKWgVxuNCBwX2NvZGUgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgIDIyNDIuICAgODc5LiAgICAgIDAgIDIwMTYgMjAyNyAgICAyMTM3ICA5OTk5IOKWgeKWh+KWgeKWgeKWgVxuIn0= -->
+<pre><code>── Data Summary ────────────────────────
+                           Values
+Name                       data  
+Number of rows             16901 
+Number of columns          20    
+_______________________          
+Column type frequency:           
+  character                14    
+  list                     2     
+  numeric                  4     
+________________________         
+Group variables            None  
+
+── Variable type: character ────────────────────────────────────────────────────────────────────────
+   skim_variable    n_missing complete_rate   min   max empty n_unique whitespace
+ 1 ur_no                    0         1         9    12     0    16763          0
+ 2 sex                      0         1         1     1     0        2          0
+ 3 princ_dx_name            0         1         3   133     0     2757          0
+ 4 assoc_diseases         822         0.951     7   254     0    12598          0
+ 5 princ_proc             176         0.990     8   254     0     3650          0
+ 6 princ_proc_name          0         1         8   146     0     1191          0
+ 7 attending_doctor         0         1         6    23     0      290          0
+ 8 spec                     0         1         2     3     0       48          0
+ 9 bed                      0         1         2     6     0      521          0
+10 discharge_status         1         1.00     11    30     0       12          0
+11 suburb                   0         1         3    20     0     1569          0
+12 state                  121         0.993     2     3     0        9          0
+13 admiss_source            0         1        20    20     0        1          0
+14 status                   0         1         8     9     0        2          0
+
+── Variable type: list ─────────────────────────────────────────────────────────────────────────────
+  skim_variable      n_missing complete_rate n_unique min_length max_length
+1 service_start_date         0             1     2213          1          1
+2 service_end_date           0             1     2185          1          1
+
+── Variable type: numeric ──────────────────────────────────────────────────────────────────────────
+  skim_variable n_missing complete_rate    mean    sd    p0   p25    p50   p75  p100 hist 
+1 age                   0         1       57.8   21.3    16    38   58      75   110 ▆▇▇▇▂
+2 los                   0         1        8.43  12.3     1     2    4      10   299 ▇▁▁▁▁
+3 icu_hrs           14361         0.150  119.   202.      0    24   52.5   122  3972 ▇▁▁▁▁
+4 p_code                0         1     2242.   879.      0  2016 2027    2137  9999 ▁▇▁▁▁</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -250,7 +355,7 @@ drive_auth()</code></pre>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW1wYWN0IG9mIGhvbWVsZXNzbmVzcyBvbiBzdXJnaWNhbCBvdXRjb21lcyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKCgojIEVudiBzZXQtdXAKCmBgYHtyfQojIGxvYWQgbGlicmFyaWVzCmxpYnJhcnkoZ29vZ2xlc2hlZXRzNCkKbGlicmFyeShnb29nbGVkcml2ZSkKbGlicmFyeSh0aWR5dmVyc2UpCmxpYnJhcnkoamFuaXRvcikKbGlicmFyeShza2ltcikKCgojIGF1dGhlbnRpY2F0ZSB3aXRoIGdvb2dsZSBkcml2ZQpkcml2ZV9hdXRoKCkKYGBgCgojIERhdGEgbG9hZCwgY2xlYW4gYW5kIGZlYXR1cmUgZW5naW5lZXJpbmcKCmBgYHtyfQoKYGBgCgojIEFuYWx5c2lzCgpgYGB7cn0KCmBgYAoKCgoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW1wYWN0IG9mIGhvbWVsZXNzbmVzcyBvbiBzdXJnaWNhbCBvdXRjb21lcyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKCgojIEVudiBzZXQtdXAKCmBgYHtyfQojIGxvYWQgbGlicmFyaWVzCmxpYnJhcnkoZ29vZ2xlc2hlZXRzNCkKbGlicmFyeShnb29nbGVkcml2ZSkKbGlicmFyeSh0aWR5dmVyc2UpCmxpYnJhcnkoamFuaXRvcikKbGlicmFyeShza2ltcikKCiMgYXV0aGVudGljYXRlIHdpdGggZ29vZ2xlIGRyaXZlCmRyaXZlX2F1dGgoKQpgYGAKCiMgRGF0YSBsb2FkLCBjbGVhbiBhbmQgZmVhdHVyZSBlbmdpbmVlcmluZwoKYGBge3J9CmRvbWljaWxlZCA8LSBkcml2ZV9nZXQoIkhvbWVsZXNzIERhdGEiKSAlPiUKICByZWFkX3NoZWV0KHJhbmdlID0gIkRvbWljaWxlZCIpICU+JQogIG11dGF0ZShzdGF0dXMgPSAiZG9taWNpbGVkIikgJT4lCiAgY2xlYW5fbmFtZXMoKQoKaG9tZWxlc3MgPC0gZHJpdmVfZ2V0KCJIb21lbGVzcyBEYXRhIikgJT4lCiAgcmVhZF9zaGVldChyYW5nZSA9ICJIb21lbGVzcyIpICU+JQogIG11dGF0ZShzdGF0dXMgPSAiaG9tZWxlc3MiKSAlPiUKICBjbGVhbl9uYW1lcygpCgpkYXRhIDwtIGJpbmRfcm93cyhkb21pY2lsZWQsIGhvbWVsZXNzKQoKc2tpbShkYXRhKQpgYGAKCiMgQW5hbHlzaXMKCmBgYHtyfQoKYGBgCgoKCgo=</div>
 
 
 
