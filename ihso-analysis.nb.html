@@ -296,52 +296,67 @@ Press Esc/Ctrl + C to cancel.</code></pre>
 <h1>Data load, clean and feature engineering</h1>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2tpbShkYXRhKVxuXG5gYGAifQ== -->
-<pre class="r"><code>skim(data)
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2hlZXRzIDwtIHZlY3Rvcihtb2RlID0gXCJsaXN0XCIsIGxlbmd0aCA9IDIpXG5cbmZvciAocyBpbiAxOjIpe1xuICBcbiAgc2hlZXRzW1tzXV0gPC0gZHJpdmVfZ2V0KFwiSG9tZWxlc3MgRGF0YVwiKSAlPiVcbiAgICByZWFkX3NoZWV0KHNoZWV0ID0gcykgJT4lXG4gICAgY2xlYW5fbmFtZXMoKSAlPiVcbiAgICBzZWxlY3QodXJfbm8sIHNleCwgYWdlLCBhc3NvY19kaXNlYXNlcywgc3BlYywgbG9zLCBpY3VfaHJzLCBkaXNjaGFyZ2Vfc3RhdHVzKSAlPiVcbiAgICBtdXRhdGUoc3RhdHVzID0gYyhcImRvbWljaWxlZFwiLCBcImhvbWVsZXNzXCIpW3NdKVxuICBcbn1cbmBgYCJ9 -->
+<pre class="r"><code>sheets &lt;- vector(mode = &quot;list&quot;, length = 2)
+
+for (s in 1:2){
+  
+  sheets[[s]] &lt;- drive_get(&quot;Homeless Data&quot;) %&gt;%
+    read_sheet(sheet = s) %&gt;%
+    clean_names() %&gt;%
+    select(ur_no, sex, age, assoc_diseases, spec, los, icu_hrs, discharge_status) %&gt;%
+    mutate(status = c(&quot;domiciled&quot;, &quot;homeless&quot;)[s])
+  
+}</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoi4pSA4pSAIERhdGEgU3VtbWFyeSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgIFZhbHVlc1xuTmFtZSAgICAgICAgICAgICAgICAgICAgICAgZGF0YSAgXG5OdW1iZXIgb2Ygcm93cyAgICAgICAgICAgICAxNjkwMSBcbk51bWJlciBvZiBjb2x1bW5zICAgICAgICAgIDIwICAgIFxuX19fX19fX19fX19fX19fX19fX19fX18gICAgICAgICAgXG5Db2x1bW4gdHlwZSBmcmVxdWVuY3k6ICAgICAgICAgICBcbiAgY2hhcmFjdGVyICAgICAgICAgICAgICAgIDE0ICAgIFxuICBsaXN0ICAgICAgICAgICAgICAgICAgICAgMiAgICAgXG4gIG51bWVyaWMgICAgICAgICAgICAgICAgICA0ICAgICBcbl9fX19fX19fX19fX19fX19fX19fX19fXyAgICAgICAgIFxuR3JvdXAgdmFyaWFibGVzICAgICAgICAgICAgTm9uZSAgXG5cbuKUgOKUgCBWYXJpYWJsZSB0eXBlOiBjaGFyYWN0ZXIg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG4gICBza2ltX3ZhcmlhYmxlICAgIG5fbWlzc2luZyBjb21wbGV0ZV9yYXRlICAgbWluICAgbWF4IGVtcHR5IG5fdW5pcXVlIHdoaXRlc3BhY2VcbiAxIHVyX25vICAgICAgICAgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDkgICAgMTIgICAgIDAgICAgMTY3NjMgICAgICAgICAgMFxuIDIgc2V4ICAgICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMSAgICAgMSAgICAgMCAgICAgICAgMiAgICAgICAgICAwXG4gMyBwcmluY19keF9uYW1lICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICAzICAgMTMzICAgICAwICAgICAyNzU3ICAgICAgICAgIDBcbiA0IGFzc29jX2Rpc2Vhc2VzICAgICAgICAgODIyICAgICAgICAgMC45NTEgICAgIDcgICAyNTQgICAgIDAgICAgMTI1OTggICAgICAgICAgMFxuIDUgcHJpbmNfcHJvYyAgICAgICAgICAgICAxNzYgICAgICAgICAwLjk5MCAgICAgOCAgIDI1NCAgICAgMCAgICAgMzY1MCAgICAgICAgICAwXG4gNiBwcmluY19wcm9jX25hbWUgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICA4ICAgMTQ2ICAgICAwICAgICAxMTkxICAgICAgICAgIDBcbiA3IGF0dGVuZGluZ19kb2N0b3IgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDYgICAgMjMgICAgIDAgICAgICAyOTAgICAgICAgICAgMFxuIDggc3BlYyAgICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMiAgICAgMyAgICAgMCAgICAgICA0OCAgICAgICAgICAwXG4gOSBiZWQgICAgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICAyICAgICA2ICAgICAwICAgICAgNTIxICAgICAgICAgIDBcbjEwIGRpc2NoYXJnZV9zdGF0dXMgICAgICAgICAxICAgICAgICAgMS4wMCAgICAgMTEgICAgMzAgICAgIDAgICAgICAgMTIgICAgICAgICAgMFxuMTEgc3VidXJiICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgMyAgICAyMCAgICAgMCAgICAgMTU2OSAgICAgICAgICAwXG4xMiBzdGF0ZSAgICAgICAgICAgICAgICAgIDEyMSAgICAgICAgIDAuOTkzICAgICAyICAgICAzICAgICAwICAgICAgICA5ICAgICAgICAgIDBcbjEzIGFkbWlzc19zb3VyY2UgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgMjAgICAgMjAgICAgIDAgICAgICAgIDEgICAgICAgICAgMFxuMTQgc3RhdHVzICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgOCAgICAgOSAgICAgMCAgICAgICAgMiAgICAgICAgICAwXG5cbuKUgOKUgCBWYXJpYWJsZSB0eXBlOiBsaXN0IOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICBza2ltX3ZhcmlhYmxlICAgICAgbl9taXNzaW5nIGNvbXBsZXRlX3JhdGUgbl91bmlxdWUgbWluX2xlbmd0aCBtYXhfbGVuZ3RoXG4xIHNlcnZpY2Vfc3RhcnRfZGF0ZSAgICAgICAgIDAgICAgICAgICAgICAgMSAgICAgMjIxMyAgICAgICAgICAxICAgICAgICAgIDFcbjIgc2VydmljZV9lbmRfZGF0ZSAgICAgICAgICAgMCAgICAgICAgICAgICAxICAgICAyMTg1ICAgICAgICAgIDEgICAgICAgICAgMVxuXG7ilIDilIAgVmFyaWFibGUgdHlwZTogbnVtZXJpYyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgc2tpbV92YXJpYWJsZSBuX21pc3NpbmcgY29tcGxldGVfcmF0ZSAgICBtZWFuICAgIHNkICAgIHAwICAgcDI1ICAgIHA1MCAgIHA3NSAgcDEwMCBoaXN0IFxuMSBhZ2UgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgNTcuOCAgIDIxLjMgICAgMTYgICAgMzggICA1OCAgICAgIDc1ICAgMTEwIOKWhuKWh+KWh+KWh+KWglxuMiBsb3MgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgIDguNDMgIDEyLjMgICAgIDEgICAgIDIgICAgNCAgICAgIDEwICAgMjk5IOKWh+KWgeKWgeKWgeKWgVxuMyBpY3VfaHJzICAgICAgICAgICAxNDM2MSAgICAgICAgIDAuMTUwICAxMTkuICAgMjAyLiAgICAgIDAgICAgMjQgICA1Mi41ICAgMTIyICAzOTcyIOKWh+KWgeKWgeKWgeKWgVxuNCBwX2NvZGUgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgIDIyNDIuICAgODc5LiAgICAgIDAgIDIwMTYgMjAyNyAgICAyMTM3ICA5OTk5IOKWgeKWh+KWgeKWgeKWgVxuIn0= -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG5cblxuXG7inJMgVGhlIGlucHV0IGBwYXRoYCByZXNvbHZlZCB0byBleGFjdGx5IDEgZmlsZS5cblJlYWRpbmcgZnJvbSBcIkhvbWVsZXNzIERhdGFcIlxuUmFuZ2UgXCInRG9taWNpbGVkJ1wiXG5cblxuXG5cbuKckyBUaGUgaW5wdXQgYHBhdGhgIHJlc29sdmVkIHRvIGV4YWN0bHkgMSBmaWxlLlxuUmVhZGluZyBmcm9tIFwiSG9tZWxlc3MgRGF0YVwiXG5SYW5nZSBcIidIb21lbGVzcydcIlxuIn0= -->
+<pre><code>
+
+
+
+✓ The input `path` resolved to exactly 1 file.
+Reading from &quot;Homeless Data&quot;
+Range &quot;&#39;Domiciled&#39;&quot;
+
+
+
+
+✓ The input `path` resolved to exactly 1 file.
+Reading from &quot;Homeless Data&quot;
+Range &quot;&#39;Homeless&#39;&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaG9tZWxlc3NfZGF0YSA8LSBiaW5kX3Jvd3Moc2hlZXRzKVxuXG5za2ltKGhvbWVsZXNzX2RhdGEpXG5gYGAifQ== -->
+<pre class="r"><code>homeless_data &lt;- bind_rows(sheets)
+
+skim(homeless_data)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoi4pSA4pSAIERhdGEgU3VtbWFyeSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgIFZhbHVlcyAgICAgICBcbk5hbWUgICAgICAgICAgICAgICAgICAgICAgIGhvbWVsZXNzX2RhdGFcbk51bWJlciBvZiByb3dzICAgICAgICAgICAgIDE2OTAxICAgICAgICBcbk51bWJlciBvZiBjb2x1bW5zICAgICAgICAgIDkgICAgICAgICAgICBcbl9fX19fX19fX19fX19fX19fX19fX19fICAgICAgICAgICAgICAgICBcbkNvbHVtbiB0eXBlIGZyZXF1ZW5jeTogICAgICAgICAgICAgICAgICBcbiAgY2hhcmFjdGVyICAgICAgICAgICAgICAgIDYgICAgICAgICAgICBcbiAgbnVtZXJpYyAgICAgICAgICAgICAgICAgIDMgICAgICAgICAgICBcbl9fX19fX19fX19fX19fX19fX19fX19fXyAgICAgICAgICAgICAgICBcbkdyb3VwIHZhcmlhYmxlcyAgICAgICAgICAgIE5vbmUgICAgICAgICBcblxu4pSA4pSAIFZhcmlhYmxlIHR5cGU6IGNoYXJhY3RlciDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbiAgc2tpbV92YXJpYWJsZSAgICBuX21pc3NpbmcgY29tcGxldGVfcmF0ZSAgIG1pbiAgIG1heCBlbXB0eSBuX3VuaXF1ZSB3aGl0ZXNwYWNlXG4xIHVyX25vICAgICAgICAgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDkgICAgMTIgICAgIDAgICAgMTY3NjMgICAgICAgICAgMFxuMiBzZXggICAgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICAgICAxICAgICAxICAgICAwICAgICAgICAyICAgICAgICAgIDBcbjMgYXNzb2NfZGlzZWFzZXMgICAgICAgICA4MjIgICAgICAgICAwLjk1MSAgICAgNyAgIDI1NCAgICAgMCAgICAxMjU5OCAgICAgICAgICAwXG40IHNwZWMgICAgICAgICAgICAgICAgICAgICAwICAgICAgICAgMSAgICAgICAgIDIgICAgIDMgICAgIDAgICAgICAgNDggICAgICAgICAgMFxuNSBkaXNjaGFyZ2Vfc3RhdHVzICAgICAgICAgMSAgICAgICAgIDEuMDAgICAgIDExICAgIDMwICAgICAwICAgICAgIDEyICAgICAgICAgIDBcbjYgc3RhdHVzICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgICAgOCAgICAgOSAgICAgMCAgICAgICAgMiAgICAgICAgICAwXG5cbuKUgOKUgCBWYXJpYWJsZSB0eXBlOiBudW1lcmljIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgFxuICBza2ltX3ZhcmlhYmxlIG5fbWlzc2luZyBjb21wbGV0ZV9yYXRlICAgbWVhbiAgICBzZCAgICBwMCAgIHAyNSAgIHA1MCAgIHA3NSAgcDEwMCBoaXN0IFxuMSBhZ2UgICAgICAgICAgICAgICAgICAgMCAgICAgICAgIDEgICAgICA1Ny44ICAgMjEuMyAgICAxNiAgICAzOCAgNTggICAgICA3NSAgIDExMCDilobilofilofilofiloJcbjIgbG9zICAgICAgICAgICAgICAgICAgIDAgICAgICAgICAxICAgICAgIDguNDMgIDEyLjMgICAgIDEgICAgIDIgICA0ICAgICAgMTAgICAyOTkg4paH4paB4paB4paB4paBXG4zIGljdV9ocnMgICAgICAgICAgIDE0MzYxICAgICAgICAgMC4xNTAgMTE5LiAgIDIwMi4gICAgICAwICAgIDI0ICA1Mi41ICAgMTIyICAzOTcyIOKWh+KWgeKWgeKWgeKWgVxuIn0= -->
 <pre><code>── Data Summary ────────────────────────
-                           Values
-Name                       data  
-Number of rows             16901 
-Number of columns          20    
-_______________________          
-Column type frequency:           
-  character                14    
-  list                     2     
-  numeric                  4     
-________________________         
-Group variables            None  
+                           Values       
+Name                       homeless_data
+Number of rows             16901        
+Number of columns          9            
+_______________________                 
+Column type frequency:                  
+  character                6            
+  numeric                  3            
+________________________                
+Group variables            None         
 
 ── Variable type: character ────────────────────────────────────────────────────────────────────────
-   skim_variable    n_missing complete_rate   min   max empty n_unique whitespace
- 1 ur_no                    0         1         9    12     0    16763          0
- 2 sex                      0         1         1     1     0        2          0
- 3 princ_dx_name            0         1         3   133     0     2757          0
- 4 assoc_diseases         822         0.951     7   254     0    12598          0
- 5 princ_proc             176         0.990     8   254     0     3650          0
- 6 princ_proc_name          0         1         8   146     0     1191          0
- 7 attending_doctor         0         1         6    23     0      290          0
- 8 spec                     0         1         2     3     0       48          0
- 9 bed                      0         1         2     6     0      521          0
-10 discharge_status         1         1.00     11    30     0       12          0
-11 suburb                   0         1         3    20     0     1569          0
-12 state                  121         0.993     2     3     0        9          0
-13 admiss_source            0         1        20    20     0        1          0
-14 status                   0         1         8     9     0        2          0
-
-── Variable type: list ─────────────────────────────────────────────────────────────────────────────
-  skim_variable      n_missing complete_rate n_unique min_length max_length
-1 service_start_date         0             1     2213          1          1
-2 service_end_date           0             1     2185          1          1
+  skim_variable    n_missing complete_rate   min   max empty n_unique whitespace
+1 ur_no                    0         1         9    12     0    16763          0
+2 sex                      0         1         1     1     0        2          0
+3 assoc_diseases         822         0.951     7   254     0    12598          0
+4 spec                     0         1         2     3     0       48          0
+5 discharge_status         1         1.00     11    30     0       12          0
+6 status                   0         1         8     9     0        2          0
 
 ── Variable type: numeric ──────────────────────────────────────────────────────────────────────────
-  skim_variable n_missing complete_rate    mean    sd    p0   p25    p50   p75  p100 hist 
-1 age                   0         1       57.8   21.3    16    38   58      75   110 ▆▇▇▇▂
-2 los                   0         1        8.43  12.3     1     2    4      10   299 ▇▁▁▁▁
-3 icu_hrs           14361         0.150  119.   202.      0    24   52.5   122  3972 ▇▁▁▁▁
-4 p_code                0         1     2242.   879.      0  2016 2027    2137  9999 ▁▇▁▁▁</code></pre>
+  skim_variable n_missing complete_rate   mean    sd    p0   p25   p50   p75  p100 hist 
+1 age                   0         1      57.8   21.3    16    38  58      75   110 ▆▇▇▇▂
+2 los                   0         1       8.43  12.3     1     2   4      10   299 ▇▁▁▁▁
+3 icu_hrs           14361         0.150 119.   202.      0    24  52.5   122  3972 ▇▁▁▁▁</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -355,7 +370,7 @@ Group variables            None
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW1wYWN0IG9mIGhvbWVsZXNzbmVzcyBvbiBzdXJnaWNhbCBvdXRjb21lcyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKCgojIEVudiBzZXQtdXAKCmBgYHtyfQojIGxvYWQgbGlicmFyaWVzCmxpYnJhcnkoZ29vZ2xlc2hlZXRzNCkKbGlicmFyeShnb29nbGVkcml2ZSkKbGlicmFyeSh0aWR5dmVyc2UpCmxpYnJhcnkoamFuaXRvcikKbGlicmFyeShza2ltcikKCiMgYXV0aGVudGljYXRlIHdpdGggZ29vZ2xlIGRyaXZlCmRyaXZlX2F1dGgoKQpgYGAKCiMgRGF0YSBsb2FkLCBjbGVhbiBhbmQgZmVhdHVyZSBlbmdpbmVlcmluZwoKYGBge3J9CmRvbWljaWxlZCA8LSBkcml2ZV9nZXQoIkhvbWVsZXNzIERhdGEiKSAlPiUKICByZWFkX3NoZWV0KHJhbmdlID0gIkRvbWljaWxlZCIpICU+JQogIG11dGF0ZShzdGF0dXMgPSAiZG9taWNpbGVkIikgJT4lCiAgY2xlYW5fbmFtZXMoKQoKaG9tZWxlc3MgPC0gZHJpdmVfZ2V0KCJIb21lbGVzcyBEYXRhIikgJT4lCiAgcmVhZF9zaGVldChyYW5nZSA9ICJIb21lbGVzcyIpICU+JQogIG11dGF0ZShzdGF0dXMgPSAiaG9tZWxlc3MiKSAlPiUKICBjbGVhbl9uYW1lcygpCgpkYXRhIDwtIGJpbmRfcm93cyhkb21pY2lsZWQsIGhvbWVsZXNzKQoKc2tpbShkYXRhKQpgYGAKCiMgQW5hbHlzaXMKCmBgYHtyfQoKYGBgCgoKCgo=</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW1wYWN0IG9mIGhvbWVsZXNzbmVzcyBvbiBzdXJnaWNhbCBvdXRjb21lcyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKCgojIEVudiBzZXQtdXAKCmBgYHtyfQojIGxvYWQgbGlicmFyaWVzCmxpYnJhcnkoZ29vZ2xlc2hlZXRzNCkKbGlicmFyeShnb29nbGVkcml2ZSkKbGlicmFyeSh0aWR5dmVyc2UpCmxpYnJhcnkoamFuaXRvcikKbGlicmFyeShza2ltcikKCiMgYXV0aGVudGljYXRlIHdpdGggZ29vZ2xlIGRyaXZlCmRyaXZlX2F1dGgoKQpgYGAKCiMgRGF0YSBsb2FkLCBjbGVhbiBhbmQgZmVhdHVyZSBlbmdpbmVlcmluZwoKYGBge3J9CnNoZWV0cyA8LSB2ZWN0b3IobW9kZSA9ICJsaXN0IiwgbGVuZ3RoID0gMikKCmZvciAocyBpbiAxOjIpewogIAogIHNoZWV0c1tbc11dIDwtIGRyaXZlX2dldCgiSG9tZWxlc3MgRGF0YSIpICU+JQogICAgcmVhZF9zaGVldChzaGVldCA9IHMpICU+JQogICAgY2xlYW5fbmFtZXMoKSAlPiUKICAgIHNlbGVjdCh1cl9ubywgc2V4LCBhZ2UsIGFzc29jX2Rpc2Vhc2VzLCBzcGVjLCBsb3MsIGljdV9ocnMsIGRpc2NoYXJnZV9zdGF0dXMpICU+JQogICAgbXV0YXRlKHN0YXR1cyA9IGMoImRvbWljaWxlZCIsICJob21lbGVzcyIpW3NdKQogIAp9Cgpob21lbGVzc19kYXRhIDwtIGJpbmRfcm93cyhzaGVldHMpCgpza2ltKGhvbWVsZXNzX2RhdGEpCmBgYAoKIyBBbmFseXNpcwoKYGBge3J9CgpgYGAKCgoKCg==</div>
 
 
 

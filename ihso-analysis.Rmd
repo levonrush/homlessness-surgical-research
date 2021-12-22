@@ -22,19 +22,21 @@ drive_auth()
 # Data load, clean and feature engineering
 
 ```{r}
-domiciled <- drive_get("Homeless Data") %>%
-  read_sheet(range = "Domiciled") %>%
-  mutate(status = "domiciled") %>%
-  clean_names()
+sheets <- vector(mode = "list", length = 2)
 
-homeless <- drive_get("Homeless Data") %>%
-  read_sheet(range = "Homeless") %>%
-  mutate(status = "homeless") %>%
-  clean_names()
+for (s in 1:2){
+  
+  sheets[[s]] <- drive_get("Homeless Data") %>%
+    read_sheet(sheet = s) %>%
+    clean_names() %>%
+    select(ur_no, sex, age, assoc_diseases, spec, los, icu_hrs, discharge_status) %>%
+    mutate(status = c("domiciled", "homeless")[s])
+  
+}
 
-data <- bind_rows(domiciled, homeless)
+homeless_data <- bind_rows(sheets)
 
-skim(data)
+skim(homeless_data)
 ```
 
 # Analysis
