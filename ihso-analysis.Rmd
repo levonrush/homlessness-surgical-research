@@ -1,6 +1,8 @@
 ---
 title: "Impact of homelessness on surgical outcomes"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
@@ -22,6 +24,7 @@ drive_auth()
 # Data load, clean and feature engineering
 
 ```{r}
+# load data
 sheets <- vector(mode = "list", length = 2)
 
 for (s in 1:2){
@@ -34,10 +37,19 @@ for (s in 1:2){
   
 }
 
-homeless_data <- bind_rows(sheets)
+# bind and clean
+homeless_data <- bind_rows(sheets) %>%
+  filter(spec != "GE") %>%
+  mutate_at(vars(c("sex", "spec", "discharge_status", "status")), as.factor)
 
-skim(homeless_data)
+# feature engineering
+
+# skim set
+homeless_data %>%
+  group_by(status) %>%
+  skim()
 ```
+
 
 # Analysis
 
