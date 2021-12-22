@@ -9,7 +9,7 @@ output:
 
 # Env set-up
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # load libraries
 library(googlesheets4)
 library(googledrive)
@@ -23,7 +23,7 @@ drive_auth()
 
 # Data load, clean and feature engineering
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # load data
 sheets <- vector(mode = "list", length = 2)
 
@@ -32,7 +32,7 @@ for (s in 1:2){
   sheets[[s]] <- drive_get("Homeless Data") %>%
     read_sheet(sheet = s) %>%
     clean_names() %>%
-    select(ur_no, sex, age, assoc_diseases, spec, los, icu_hrs, discharge_status) %>%
+    select(sex, age, assoc_diseases, spec, los, icu_hrs, discharge_status) %>%
     mutate(status = c("domiciled", "homeless")[s])
   
 }
@@ -43,6 +43,13 @@ homeless_data <- bind_rows(sheets) %>%
   mutate_at(vars(c("sex", "spec", "discharge_status", "status")), as.factor)
 
 # feature engineering
+homeless_data <- homeless_data %>%
+  mutate(complication = str_detect(assoc_diseases, "T8."),
+         mortality = str_detect(as.character(discharge_status), "DEATH"),
+         psyc_admission = spec == "PSY",
+         icu_admission = icu_hrs > 0,
+         da_disorder = str_detect(assoc_diseases, "F1"),
+         daor = str_detect(assoc_diseases, "[F2 | F43]")) # FIXME: check to see if this defn works
 
 # skim set
 homeless_data %>%
@@ -50,12 +57,53 @@ homeless_data %>%
   skim()
 ```
 
-
 # Analysis
 
-```{r}
+## primary
 
+```{r, message=FALSE, warning=FALSE}
+comp_glm <- glm(complication ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+comp_glm %>% summary
 ```
+
+## secondary
+
+```{r, message=FALSE, warning=FALSE}
+mort_glm <- glm(mortality ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+mort_glm %>% summary
+```
+
+```{r, message=FALSE, warning=FALSE}
+los_lm <- lm(los ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+
+los_lm %>% summary
+los_lm %>% plot
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+icu_glm <- glm(icu_admission ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+icu_glm %>% summary
+
+icu_lm <- lm(icu_hrs ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+
+icu_lm %>% summary
+icu_lm %>% plot
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+daor_glm <- glm(daor ~ status + age + sex + psyc_admission + da_disorder, data = homeless_data)
+daor_glm %>% summary
+```
+
+
+
+
+
+
+
 
 
 
