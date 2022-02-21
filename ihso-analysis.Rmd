@@ -7,9 +7,9 @@ output:
 
 # Background
 
-The following observational analysis has been designed to determine the impact of homelessness on surgical outcomes. To determine this impact, if any, we fit a number of linear models containing their housing status as well as other potentially confounding variables to determine whether there is an impact and quantify it.
+The following observational analysis has been designed to determine the impact of homelessness on surgical outcomes. To assess this impact, if any, we fit several linear models containing their housing status and other potentially confounding variables to determine whether there is an impact and quantify it.
 
-The datasets relating to these outcomes were provided by the St Vincent's Hospital Sydney Coding Office (SVHSCO).
+The St Vincent's Hospital Sydney Coding Office (SVHSCO) provided the data sets relating to these outcomes.
 
 ## Enpoints
 
@@ -19,21 +19,21 @@ The primary efficacy endpoint is:
 
 and the secondary endpoints include:
 
-* Patient Mortality as `mortality`: a logical variable indicating whether the patient had a died during their hospital admission.
+* Patient Mortality as `mortality`: a logical variable indicating whether the patient died during their hospital admission.
 * Length of Stay as`los` a measurement of in days of how long each patient stayed in hospital.
 * ICU Admission as `icu_admission`: a logical variable indicating whether the patient was admitted to ICU.
 * ICU Hours as `icu_hrs`: a measurement in hours of how long the patient spent in ICU.
-* Discharge at Own Risk as `daor`: a logical variable indicating whether the patient discharged themselves at their own risk.
+* Discharge at Own Risk as `daor`: a logical variable indicating whether patients discharged themselves at their own risk.
 
-## Complicaiton factors
+## Complication factors
 
 The variable of interest was:
 
-* Housing Status as`status`: the housing status of the patient undergoing surgery.
+* Housing Status as `status`: the patient's housing status undergoing surgery.
 
 Other potentially confounding variables considered as part of the analysis were:
 
-* Patient Age as `age`: a measurement of the patients age in years at time of admission.
+* Patient Age as `age`: a measurement of the patient's age in years at the time of admission.
 * Patient Sex as `sex`: sex of the patient.
 * Drug and Alcohol Disorder as `da_disorder`: whether the patient had a drug and alcohol disorder associated with their admission.
 * Mental Illness as `mental_illness`: whether the patient had a drug and a mental illness associated with their admission.
@@ -56,19 +56,21 @@ library(scales)
 
 # Data load, clean and feature engineering
 
-The data is contained as a google sheet. The following routine fetches cleans and generates features from these datasets to create a analysis dataframe called `homeless_data`.
+The data is contained as a google sheet. The following routine fetches, cleans and generates features from these datasets to create an analysis data frame called `homeless_data`.
 
 The cleaning process involves the following processes:
 
 * All non-surgical patient admissions were filtered out of the data set.
+* `NA` values for `assoc_diseases` were encoded as `NONE`
+* `NA` values for `icu_hrs` were encoded as 0.
 
 The features we generate are:
 
 * `complication`: a logical variable as defined by the inclusion of `assoc_diseases` beginning with `T8`.
-* `icu_admission`: logical variable  defined by the `icu_hrs` variable greater than 0.
-* `da_disorder`: a logical variable as defined by the inclusion of `assoc_diseases` beginning with `F1`.
-* `mental_illness`: a logical variable as defined by the inclusion of `assoc_diseases` beginning with `F2`, `F3` or `F4`.
-* `doar`: as logical variable as defined by a `discharge_status` equal to `Discharge at Own Risk`
+* `icu_admission`: logical variable defined by the `icu_hrs` variable greater than 0.
+* `da_disorder`: a logical variable defined by the inclusion of `assoc_diseases` beginning with `F1`.
+* `mental_illness`: a logical variable defined by the inclusion of `assoc_diseases` beginning with `F2`, `F3` or `F4`.
+* `doar`: as logical variable as defined by a `discharge_status` equal to `Discharge at Own Risk.`
 
 ```{r, message=FALSE, warning=FALSE}
 # load data by looping through the sheets
@@ -87,22 +89,23 @@ for (s in 1:2){
 # bind the sheets together and clean
 homeless_data <- bind_rows(sheets) %>%
   filter(spec %in% c("OT1", "OT2", "CRS", "NS", "HNO", "PLS", "CTS", "VAS", "SOC", "ENT", "URO", "GIT")) %>%
-  mutate_at(vars(c("sex", "spec", "discharge_status", "status")), as.factor)
+  mutate_at(vars(c("sex", "spec", "discharge_status", "status")), as.factor) %>%
+  replace_na(list(assoc_diseases = "NONE",
+                  icu_hrs = 0))
 
 # feature engineering
 homeless_data <- homeless_data %>%
-  replace_na(list(assoc_diseases = "NONE",
-                  icu_hrs = 0)) %>%
-  mutate(complication = ifelse(str_detect(assoc_diseases, "T8."), T, F),
+  mutate(complication = ifelse(str_detect(assoc_diseases, "T8"), T, F),
          mortality = ifelse(str_detect(as.character(discharge_status), "DEATH"), T, F),
          icu_admission = ifelse(icu_hrs > 0, T, F),
-         da_disorder = ifelse(str_detect(assoc_diseases, "F1"), T, F),
-         mental_illness = ifelse(str_detect(assoc_diseases, "[F2|F3|F4]"), T, F),
+         da_disorder = ifelse(str_detect(assoc_diseases, "F1"), T, F), 
+         mental_illness = case_when(
+           str_detect(assoc_diseases, "F2") ~ T,
+           str_detect(assoc_diseases, "F3") ~ T,
+           str_detect(assoc_diseases, "F4") ~ T,
+           TRUE ~ F
+           ),
          daor = ifelse(discharge_status == "Discharge at Own Risk", T, F)) 
-
-# only keep relevant columns
-homeless_data <- homeless_data %>%
-  select(-assoc_diseases)
 
 # skim set by status group
 homeless_data %>%
@@ -125,10 +128,10 @@ comp_glm_summary <- comp_glm %>% summary
 comp_glm_summary
 ```
 
-We observe that the variables `status` (P = `r comp_glm_summary$coefficients["statushomeless", 4]`) and `mental_illness` (P = `r comp_glm_summary$coefficients["mental_illnessTRUE", 4]`) don't contribute to the model. As such we eliminate these terms from the modelling to reach our final model.
+We observe that the variable `status` (P = `r comp_glm_summary$coefficients["statushomeless", 4]`) didn't contribute to the model. As such, we eliminate the term from the modelling to reach our final model.
 
 ```{r, message=FALSE, warning=FALSE}
-comp_glm_final <- glm(complication ~ age + sex + da_disorder, 
+comp_glm_final <- glm(complication ~ age + sex + da_disorder + mental_illness, 
                 family = binomial(),
                 data = homeless_data)
 
@@ -141,10 +144,11 @@ From this final model we can determine that that:
 * For each year of age, the likelihood of surgical complication increases by `r percent(exp(comp_glm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(comp_glm_final)["age",])-1`, P = `r comp_glm_final_summary$coefficients["age", 4]`).
 * Male patients are `r percent(exp(comp_glm_final$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to experience surgical complication than females (95% CI = `r exp(confint(comp_glm_final)["sexM",])-1`, P = `r comp_glm_final_summary$coefficients["sexM", 4]`).
 * Patients with drug and alcohol disorders are `r percent(exp(comp_glm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` more likely to experience surgical complication than those without (95% CI = `r exp(confint(comp_glm_final)["da_disorderTRUE",])-1`, P = `r comp_glm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illness are expected to have stay `r percent(exp(comp_glm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` longer in hospital than those without (95% CI = `r exp(confint(comp_glm_final)["mental_illnessTRUE",])-1`, P = `r comp_glm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ## Secondary Enpoints
 
-### Mortaility
+### Mortality
 
 To determine the effects on mortality risk during surgery we fit a logistic regression model to our dataset as so:
 
@@ -165,10 +169,7 @@ mort_glm_final <- glm(mortality ~ age + sex,
                 data = homeless_data)
 
 mort_glm_final_summary <- mort_glm %>% summary
-mort_glm_final_summary 
-
-percent(exp(comp_glm_final$coefficients[["age"]])-1, accuracy = 0.01)
-exp(confint(comp_glm_final)["da_disorderTRUE",])-1
+mort_glm_final_summary
 ```
 
 From this final model we can determine that that:
@@ -178,12 +179,10 @@ From this final model we can determine that that:
 
 ### Length of Stay
 
-To determine the effects on a patient's length of stay we fit linear models to our dataset.
-
-To do this firstly we need to make a log transform to our outcome variable in order to fit the model properly.
+To determine the effects on a patient's length of stay, we fit linear models to our dataset. Firstly, we need to make a log transform to our outcome variable to fit the model correctly.
 
 ```{r, message=FALSE, warning=FALSE}
-# new log transformed outtcome variable
+# new log transformed outcome variable
 homeless_data <- homeless_data %>%
   mutate(los_trans = log(los))
 
@@ -213,7 +212,7 @@ From this final model we can determine that that:
 
 ### ICU Admission
 
-To determine the effects on ICU admission risk during surgery we fit a logistic regression model to our dataset as so:
+To determine the effects on ICU admission risk during surgery, we fit a logistic regression model to our dataset as so:
 
 ```{r, message=FALSE, warning=FALSE}
 icu_glm <- glm(icu_admission ~ status + age + sex + da_disorder + mental_illness, 
@@ -244,9 +243,7 @@ From this final model we can determine that that:
 
 ### ICU Hours
 
-To determine the effects on a patient's length of stay in ICU we fit linear models to our dataset.
-
-To do this firstly we need to make a log transform to our outcome variable in order to fit the model properly.
+To determine the effects on a patient's length of stay in ICU, we fit linear models to our data set. Firstly, we need to make a log transform to our outcome variable to fit the model properly.
 
 ```{r, message=FALSE, warning=FALSE}
 homeless_data <- homeless_data %>%
@@ -259,10 +256,10 @@ icu_lm_summary <- icu_lm %>% summary
 icu_lm_summary
 ```
 
-We observe that the variables `status` (P = `r icu_lm_summary$coefficients["statushomeless", 4]`), `sex` (P = `r icu_lm_summary$coefficients["sexM", 4]`) and `mental_illness` (P = `r icu_lm_summary$coefficients["mental_illnessTRUE", 4]`) don't contribute to the model. As such we eliminate these terms from the modelling to reach our final model.
+We observe that the variables `status` (P = `r icu_lm_summary$coefficients["statushomeless", 4]`), `age` (P = `r icu_lm_summary$coefficients["age", 4]`), and `sex` (P = `r icu_lm_summary$coefficients["sexM", 4]`).
 
 ```{r, message=FALSE, warning=FALSE}
-icu_lm_final <- lm(icu_hrs_trans ~ age + da_disorder, 
+icu_lm_final <- lm(icu_hrs_trans ~ da_disorder + mental_illness, 
              data = homeless_data)
 
 icu_lm_final_summary <- icu_lm_final %>% summary
@@ -271,12 +268,12 @@ icu_lm_final_summary
 
 From this final model we can determine that that:
 
-* For each year increase of patients age, the length of stay in ICU is expected to increase by `r percent(exp(icu_lm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(icu_lm_final)["age",])-1`, P = `r icu_lm_final_summary$coefficients["age", 4]`).
 * Patients with drug and alcohol disorders are expected to have stay `r percent(exp(icu_lm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` longer in ICU than those without (95% CI = `r exp(confint(icu_lm_final)["da_disorderTRUE",])-1`, P = `r icu_lm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illnesses are `r percent(exp(icu_lm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_lm_final)["mental_illnessTRUE",])-1`, P = `r icu_lm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ### Discharge At Own Risk
 
-To determine the effects on patients risk to discharge themselves at their own risk post surgery we fit a logistic regression model to our dataset as so:
+To determine the effects on patients risk to discharge themselves at their risk post-surgery, we fit a logistic regression model to our data set as so:
 
 ```{r, message=FALSE, warning=FALSE}
 daor_glm <- glm(daor ~ status + age + sex + da_disorder  + mental_illness, 
@@ -293,8 +290,7 @@ Given that all the variables in this model show significant effects we can deter
 * For each year of age, the likelihood of discharge themselves at their own risk decreases by `r percent(exp(daor_glm$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r confint(daor_glm)["age",]`, P = `r daor_glm_summary$coefficients["age", 4]`).
 * Male patients are `r percent(exp(daor_glm$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than females (95% CI = `r exp(confint(daor_glm)["sexM",])`, P = `r daor_glm_summary$coefficients["sexM", 4]`).
 * Patients with drug and alcohol disorders are `r percent(exp(daor_glm$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than those without (95% CI = `r confint(daor_glm)["da_disorderTRUE",]`, P = `r daor_glm_summary$coefficients["da_disorderTRUE", 4]`).
-* Patients with associated mental illnesses are `r percent(exp(daor_glm$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than those without (95% CI = `r exp(confint(daor_glm)["mental_illnessTRUE",])-1`, P = `r daor_glm_summary$coefficients["mental_illnessTRUE", 4]`).
 
 # Conclusions
 
-By fitting sets of models to our outcomes variables we have been able to determine that the only effects homelessness has on surgical outcomes and increase to a patients length of stay and risk of discharge at own risk. All other analysed outcomes are associated with other confounding variables that are often associated with homelessness itself.
+By fitting sets of models to our outcome variables, we have determined that homelessness only affects a patient's length of stay and risk of discharge at own risk. All other analysed outcomes are associated with other confounding variables that are often associated with homelessness itself.

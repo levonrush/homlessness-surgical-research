@@ -172,8 +172,8 @@ pre code {
 
 <div id="background" class="section level1">
 <h1>Background</h1>
-<p>The following observational analysis has been designed to determine the impact of homelessness on surgical outcomes. To determine this impact, if any, we fit a number of linear models containing their housing status as well as other potentially confounding variables to determine whether there is an impact and quantify it.</p>
-<p>The datasets relating to these outcomes were provided by the St Vincent’s Hospital Sydney Coding Office (SVHSCO).</p>
+<p>The following observational analysis has been designed to determine the impact of homelessness on surgical outcomes. To assess this impact, if any, we fit several linear models containing their housing status and other potentially confounding variables to determine whether there is an impact and quantify it.</p>
+<p>The St Vincent’s Hospital Sydney Coding Office (SVHSCO) provided the data sets relating to these outcomes.</p>
 <div id="enpoints" class="section level2">
 <h2>Enpoints</h2>
 <p>The primary efficacy endpoint is:</p>
@@ -182,22 +182,22 @@ pre code {
 </ul>
 <p>and the secondary endpoints include:</p>
 <ul>
-<li>Patient Mortality as <code>mortality</code>: a logical variable indicating whether the patient had a died during their hospital admission.</li>
+<li>Patient Mortality as <code>mortality</code>: a logical variable indicating whether the patient died during their hospital admission.</li>
 <li>Length of Stay as<code>los</code> a measurement of in days of how long each patient stayed in hospital.</li>
 <li>ICU Admission as <code>icu_admission</code>: a logical variable indicating whether the patient was admitted to ICU.</li>
 <li>ICU Hours as <code>icu_hrs</code>: a measurement in hours of how long the patient spent in ICU.</li>
-<li>Discharge at Own Risk as <code>daor</code>: a logical variable indicating whether the patient discharged themselves at their own risk.</li>
+<li>Discharge at Own Risk as <code>daor</code>: a logical variable indicating whether patients discharged themselves at their own risk.</li>
 </ul>
 </div>
-<div id="complicaiton-factors" class="section level2">
-<h2>Complicaiton factors</h2>
+<div id="complication-factors" class="section level2">
+<h2>Complication factors</h2>
 <p>The variable of interest was:</p>
 <ul>
-<li>Housing Status as<code>status</code>: the housing status of the patient undergoing surgery.</li>
+<li>Housing Status as <code>status</code>: the patient’s housing status undergoing surgery.</li>
 </ul>
 <p>Other potentially confounding variables considered as part of the analysis were:</p>
 <ul>
-<li>Patient Age as <code>age</code>: a measurement of the patients age in years at time of admission.</li>
+<li>Patient Age as <code>age</code>: a measurement of the patient’s age in years at the time of admission.</li>
 <li>Patient Sex as <code>sex</code>: sex of the patient.</li>
 <li>Drug and Alcohol Disorder as <code>da_disorder</code>: whether the patient had a drug and alcohol disorder associated with their admission.</li>
 <li>Mental Illness as <code>mental_illness</code>: whether the patient had a drug and a mental illness associated with their admission.</li>
@@ -218,18 +218,20 @@ library(scales)</code></pre>
 </div>
 <div id="data-load-clean-and-feature-engineering" class="section level1">
 <h1>Data load, clean and feature engineering</h1>
-<p>The data is contained as a google sheet. The following routine fetches cleans and generates features from these datasets to create a analysis dataframe called <code>homeless_data</code>.</p>
+<p>The data is contained as a google sheet. The following routine fetches, cleans and generates features from these datasets to create an analysis data frame called <code>homeless_data</code>.</p>
 <p>The cleaning process involves the following processes:</p>
 <ul>
 <li>All non-surgical patient admissions were filtered out of the data set.</li>
+<li><code>NA</code> values for <code>assoc_diseases</code> were encoded as <code>NONE</code></li>
+<li><code>NA</code> values for <code>icu_hrs</code> were encoded as 0.</li>
 </ul>
 <p>The features we generate are:</p>
 <ul>
 <li><code>complication</code>: a logical variable as defined by the inclusion of <code>assoc_diseases</code> beginning with <code>T8</code>.</li>
 <li><code>icu_admission</code>: logical variable defined by the <code>icu_hrs</code> variable greater than 0.</li>
-<li><code>da_disorder</code>: a logical variable as defined by the inclusion of <code>assoc_diseases</code> beginning with <code>F1</code>.</li>
-<li><code>mental_illness</code>: a logical variable as defined by the inclusion of <code>assoc_diseases</code> beginning with <code>F2</code>, <code>F3</code> or <code>F4</code>.</li>
-<li><code>doar</code>: as logical variable as defined by a <code>discharge_status</code> equal to <code>Discharge at Own Risk</code></li>
+<li><code>da_disorder</code>: a logical variable defined by the inclusion of <code>assoc_diseases</code> beginning with <code>F1</code>.</li>
+<li><code>mental_illness</code>: a logical variable defined by the inclusion of <code>assoc_diseases</code> beginning with <code>F2</code>, <code>F3</code> or <code>F4</code>.</li>
+<li><code>doar</code>: as logical variable as defined by a <code>discharge_status</code> equal to <code>Discharge at Own Risk.</code></li>
 </ul>
 <pre class="r"><code># load data by looping through the sheets
 sheets &lt;- vector(mode = &quot;list&quot;, length = 2)
@@ -247,22 +249,23 @@ for (s in 1:2){
 # bind the sheets together and clean
 homeless_data &lt;- bind_rows(sheets) %&gt;%
   filter(spec %in% c(&quot;OT1&quot;, &quot;OT2&quot;, &quot;CRS&quot;, &quot;NS&quot;, &quot;HNO&quot;, &quot;PLS&quot;, &quot;CTS&quot;, &quot;VAS&quot;, &quot;SOC&quot;, &quot;ENT&quot;, &quot;URO&quot;, &quot;GIT&quot;)) %&gt;%
-  mutate_at(vars(c(&quot;sex&quot;, &quot;spec&quot;, &quot;discharge_status&quot;, &quot;status&quot;)), as.factor)
+  mutate_at(vars(c(&quot;sex&quot;, &quot;spec&quot;, &quot;discharge_status&quot;, &quot;status&quot;)), as.factor) %&gt;%
+  replace_na(list(assoc_diseases = &quot;NONE&quot;,
+                  icu_hrs = 0))
 
 # feature engineering
 homeless_data &lt;- homeless_data %&gt;%
-  replace_na(list(assoc_diseases = &quot;NONE&quot;,
-                  icu_hrs = 0)) %&gt;%
-  mutate(complication = ifelse(str_detect(assoc_diseases, &quot;T8.&quot;), T, F),
+  mutate(complication = ifelse(str_detect(assoc_diseases, &quot;T8&quot;), T, F),
          mortality = ifelse(str_detect(as.character(discharge_status), &quot;DEATH&quot;), T, F),
          icu_admission = ifelse(icu_hrs &gt; 0, T, F),
-         da_disorder = ifelse(str_detect(assoc_diseases, &quot;F1&quot;), T, F),
-         mental_illness = ifelse(str_detect(assoc_diseases, &quot;[F2|F3|F4]&quot;), T, F),
+         da_disorder = ifelse(str_detect(assoc_diseases, &quot;F1&quot;), T, F), 
+         mental_illness = case_when(
+           str_detect(assoc_diseases, &quot;F2&quot;) ~ T,
+           str_detect(assoc_diseases, &quot;F3&quot;) ~ T,
+           str_detect(assoc_diseases, &quot;F4&quot;) ~ T,
+           TRUE ~ F
+           ),
          daor = ifelse(discharge_status == &quot;Discharge at Own Risk&quot;, T, F)) 
-
-# only keep relevant columns
-homeless_data &lt;- homeless_data %&gt;%
-  select(-assoc_diseases)
 
 # skim set by status group
 homeless_data %&gt;%
@@ -281,7 +284,7 @@ homeless_data %&gt;%
 </tr>
 <tr class="odd">
 <td align="left">Number of columns</td>
-<td align="left">13</td>
+<td align="left">14</td>
 </tr>
 <tr class="even">
 <td align="left">_______________________</td>
@@ -292,24 +295,68 @@ homeless_data %&gt;%
 <td align="left"></td>
 </tr>
 <tr class="even">
+<td align="left">character</td>
+<td align="left">1</td>
+</tr>
+<tr class="odd">
 <td align="left">factor</td>
 <td align="left">3</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">logical</td>
 <td align="left">6</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">numeric</td>
 <td align="left">3</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">________________________</td>
 <td align="left"></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Group variables</td>
 <td align="left">status</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="left">status</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">min</th>
+<th align="right">max</th>
+<th align="right">empty</th>
+<th align="right">n_unique</th>
+<th align="right">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">assoc_diseases</td>
+<td align="left">domiciled</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">254</td>
+<td align="right">0</td>
+<td align="right">8760</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">assoc_diseases</td>
+<td align="left">homeless</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">254</td>
+<td align="right">0</td>
+<td align="right">221</td>
+<td align="right">0</td>
 </tr>
 </tbody>
 </table>
@@ -474,16 +521,16 @@ homeless_data %&gt;%
 <td align="left">domiciled</td>
 <td align="right">0</td>
 <td align="right">1</td>
-<td align="right">0.92</td>
-<td align="left">TRU: 10107, FAL: 898</td>
+<td align="right">0.02</td>
+<td align="left">FAL: 10743, TRU: 262</td>
 </tr>
 <tr class="even">
 <td align="left">mental_illness</td>
 <td align="left">homeless</td>
 <td align="right">0</td>
 <td align="right">1</td>
-<td align="right">0.99</td>
-<td align="left">TRU: 222, FAL: 2</td>
+<td align="right">0.10</td>
+<td align="left">FAL: 202, TRU: 22</td>
 </tr>
 <tr class="odd">
 <td align="left">daor</td>
@@ -627,28 +674,28 @@ comp_glm_summary</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -0.6537  -0.4586  -0.4008  -0.3438   2.5192  
+## -0.7598  -0.4511  -0.3825  -0.3250   2.6093  
 ## 
 ## Coefficients:
-##                      Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -19.299637 216.461928  -0.089 0.928955    
-## statushomeless       0.248147   0.221584   1.120 0.262766    
-## age                  0.014421   0.001721   8.378  &lt; 2e-16 ***
-## sexM                 0.274589   0.075408   3.641 0.000271 ***
-## da_disorderTRUE      0.296208   0.102650   2.886 0.003906 ** 
-## mental_illnessTRUE  15.880802 216.461914   0.073 0.941515    
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)        -3.725483   0.130412 -28.567  &lt; 2e-16 ***
+## statushomeless      0.275866   0.222412   1.240 0.214850    
+## age                 0.017755   0.001699  10.449  &lt; 2e-16 ***
+## sexM                0.294772   0.075173   3.921 8.81e-05 ***
+## da_disorderTRUE     0.366906   0.103606   3.541 0.000398 ***
+## mental_illnessTRUE  0.370956   0.187492   1.979 0.047870 *  
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 6288.3  on 11228  degrees of freedom
-## Residual deviance: 6047.9  on 11223  degrees of freedom
-## AIC: 6059.9
+## Residual deviance: 6155.3  on 11223  degrees of freedom
+## AIC: 6167.3
 ## 
-## Number of Fisher Scoring iterations: 17</code></pre>
-<p>We observe that the variables <code>status</code> (P = 0.2627657) and <code>mental_illness</code> (P = 0.9415154) don’t contribute to the model. As such we eliminate these terms from the modelling to reach our final model.</p>
-<pre class="r"><code>comp_glm_final &lt;- glm(complication ~ age + sex + da_disorder, 
+## Number of Fisher Scoring iterations: 5</code></pre>
+<p>We observe that the variable <code>status</code> (P = 0.2148498) didn’t contribute to the model. As such, we eliminate the term from the modelling to reach our final model.</p>
+<pre class="r"><code>comp_glm_final &lt;- glm(complication ~ age + sex + da_disorder + mental_illness, 
                 family = binomial(),
                 data = homeless_data)
 
@@ -656,40 +703,42 @@ comp_glm_final_summary &lt;- comp_glm_final %&gt;% summary
 comp_glm_final_summary</code></pre>
 <pre><code>## 
 ## Call:
-## glm(formula = complication ~ age + sex + da_disorder, family = binomial(), 
-##     data = homeless_data)
+## glm(formula = complication ~ age + sex + da_disorder + mental_illness, 
+##     family = binomial(), data = homeless_data)
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -0.7052  -0.4519  -0.3847  -0.3269   2.6040  
+## -0.7714  -0.4510  -0.3834  -0.3258   2.6071  
 ## 
 ## Coefficients:
-##                  Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)     -3.710189   0.129972 -28.546  &lt; 2e-16 ***
-## age              0.017696   0.001694  10.446  &lt; 2e-16 ***
-## sexM             0.294370   0.075143   3.917 8.95e-05 ***
-## da_disorderTRUE  0.416837   0.100325   4.155 3.25e-05 ***
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)        -3.717627   0.130084 -28.579  &lt; 2e-16 ***
+## age                 0.017657   0.001695  10.416  &lt; 2e-16 ***
+## sexM                0.296354   0.075150   3.943 8.03e-05 ***
+## da_disorderTRUE     0.390871   0.101395   3.855 0.000116 ***
+## mental_illnessTRUE  0.381599   0.187244   2.038 0.041553 *  
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 6288.3  on 11228  degrees of freedom
-## Residual deviance: 6160.6  on 11225  degrees of freedom
-## AIC: 6168.6
+## Residual deviance: 6156.7  on 11224  degrees of freedom
+## AIC: 6166.7
 ## 
 ## Number of Fisher Scoring iterations: 5</code></pre>
 <p>From this final model we can determine that that:</p>
 <ul>
-<li>For each year of age, the likelihood of surgical complication increases by 1.79% (95% CI = 0.0144888, 0.0212494, P = 1.5325013^{-25}).</li>
-<li>Male patients are 34.23% more likely to experience surgical complication than females (95% CI = 0.1594366, 0.5567274, P = 8.9486685^{-5}).</li>
-<li>Patients with drug and alcohol disorders are 51.72% more likely to experience surgical complication than those without (95% CI = 0.2419707, 0.8409179, P = 3.254808^{-5}).</li>
+<li>For each year of age, the likelihood of surgical complication increases by 1.78% (95% CI = 0.0144471, 0.021212, P = 2.0981934^{-25}).</li>
+<li>Male patients are 34.49% more likely to experience surgical complication than females (95% CI = 0.1617232, 0.5598411, P = 8.0302683^{-5}).</li>
+<li>Patients with drug and alcohol disorders are 47.83% more likely to experience surgical complication than those without (95% CI = 0.2076027, 0.7974892, P = 1.157635^{-4}).</li>
+<li>Patients with associated mental illness are expected to have stay 46.46% longer in hospital than those without (95% CI = -0.0012, 1.0853189, P = 0.0415528).</li>
 </ul>
 </div>
 <div id="secondary-enpoints" class="section level2">
 <h2>Secondary Enpoints</h2>
-<div id="mortaility" class="section level3">
-<h3>Mortaility</h3>
+<div id="mortality" class="section level3">
+<h3>Mortality</h3>
 <p>To determine the effects on mortality risk during surgery we fit a logistic regression model to our dataset as so:</p>
 <pre class="r"><code>mort_glm &lt;- glm(mortality ~ status + age + sex + da_disorder + mental_illness, 
                 family = binomial(),
@@ -704,33 +753,33 @@ mort_glm_summary</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -0.3021  -0.1638  -0.1236  -0.0962   3.4798  
+## -0.3037  -0.1645  -0.1226  -0.0957   3.4734  
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -6.767343   0.537450 -12.592  &lt; 2e-16 ***
-## statushomeless     -0.526740   1.018821  -0.517   0.6051    
-## age                 0.031194   0.005068   6.154 7.53e-10 ***
-## sexM                0.460984   0.208224   2.214   0.0268 *  
-## da_disorderTRUE    -0.066194   0.340875  -0.194   0.8460    
-## mental_illnessTRUE -0.064498   0.478278  -0.135   0.8927    
+## (Intercept)        -6.806629   0.402039 -16.930  &lt; 2e-16 ***
+## statushomeless     -0.496062   1.019121  -0.487   0.6264    
+## age                 0.031078   0.004885   6.362 1.99e-10 ***
+## sexM                0.459016   0.208275   2.204   0.0275 *  
+## da_disorderTRUE    -0.032706   0.340187  -0.096   0.9234    
+## mental_illnessTRUE -1.043155   1.009545  -1.033   0.3015    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 1236.6  on 11228  degrees of freedom
-## Residual deviance: 1191.0  on 11223  degrees of freedom
-## AIC: 1203
+## Residual deviance: 1189.5  on 11223  degrees of freedom
+## AIC: 1201.5
 ## 
 ## Number of Fisher Scoring iterations: 8</code></pre>
-<p>We observe that the variables <code>status</code> (P = 0.6051498), <code>da_disorder</code> (P = 0.8460277) and <code>mental_illness</code> (P = 0.8927275) don’t contribute to the model. As such we eliminate these terms from the modelling to reach our final model.</p>
+<p>We observe that the variables <code>status</code> (P = 0.6264319), <code>da_disorder</code> (P = 0.9234096) and <code>mental_illness</code> (P = 0.3014673) don’t contribute to the model. As such we eliminate these terms from the modelling to reach our final model.</p>
 <pre class="r"><code>mort_glm_final &lt;- glm(mortality ~ age + sex, 
                 family = binomial(),
                 data = homeless_data)
 
 mort_glm_final_summary &lt;- mort_glm %&gt;% summary
-mort_glm_final_summary </code></pre>
+mort_glm_final_summary</code></pre>
 <pre><code>## 
 ## Call:
 ## glm(formula = mortality ~ status + age + sex + da_disorder + 
@@ -738,42 +787,36 @@ mort_glm_final_summary </code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -0.3021  -0.1638  -0.1236  -0.0962   3.4798  
+## -0.3037  -0.1645  -0.1226  -0.0957   3.4734  
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -6.767343   0.537450 -12.592  &lt; 2e-16 ***
-## statushomeless     -0.526740   1.018821  -0.517   0.6051    
-## age                 0.031194   0.005068   6.154 7.53e-10 ***
-## sexM                0.460984   0.208224   2.214   0.0268 *  
-## da_disorderTRUE    -0.066194   0.340875  -0.194   0.8460    
-## mental_illnessTRUE -0.064498   0.478278  -0.135   0.8927    
+## (Intercept)        -6.806629   0.402039 -16.930  &lt; 2e-16 ***
+## statushomeless     -0.496062   1.019121  -0.487   0.6264    
+## age                 0.031078   0.004885   6.362 1.99e-10 ***
+## sexM                0.459016   0.208275   2.204   0.0275 *  
+## da_disorderTRUE    -0.032706   0.340187  -0.096   0.9234    
+## mental_illnessTRUE -1.043155   1.009545  -1.033   0.3015    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 1236.6  on 11228  degrees of freedom
-## Residual deviance: 1191.0  on 11223  degrees of freedom
-## AIC: 1203
+## Residual deviance: 1189.5  on 11223  degrees of freedom
+## AIC: 1201.5
 ## 
 ## Number of Fisher Scoring iterations: 8</code></pre>
-<pre class="r"><code>percent(exp(comp_glm_final$coefficients[[&quot;age&quot;]])-1, accuracy = 0.01)</code></pre>
-<pre><code>## [1] &quot;1.79%&quot;</code></pre>
-<pre class="r"><code>exp(confint(comp_glm_final)[&quot;da_disorderTRUE&quot;,])-1</code></pre>
-<pre><code>##     2.5 %    97.5 % 
-## 0.2419707 0.8409179</code></pre>
 <p>From this final model we can determine that that:</p>
 <ul>
-<li>For each year of age, the likelihood of mortality increases by 3.18% (95% CI = 1.0221346, 1.041882, P = 7.5334615^{-10}).</li>
-<li>Male patients are 57.48% more likely to experience mortality than females (95% CI = 0.0550032, 1.3869013, P = 0.026837).</li>
+<li>For each year of age, the likelihood of mortality increases by 3.18% (95% CI = 1.0221346, 1.041882, P = 1.9902185^{-10}).</li>
+<li>Male patients are 57.48% more likely to experience mortality than females (95% CI = 0.0550032, 1.3869013, P = 0.0275319).</li>
 </ul>
 </div>
 <div id="length-of-stay" class="section level3">
 <h3>Length of Stay</h3>
-<p>To determine the effects on a patient’s length of stay we fit linear models to our dataset.</p>
-<p>To do this firstly we need to make a log transform to our outcome variable in order to fit the model properly.</p>
-<pre class="r"><code># new log transformed outtcome variable
+<p>To determine the effects on a patient’s length of stay, we fit linear models to our dataset. Firstly, we need to make a log transform to our outcome variable to fit the model correctly.</p>
+<pre class="r"><code># new log transformed outcome variable
 homeless_data &lt;- homeless_data %&gt;%
   mutate(los_trans = log(los))
 
@@ -789,23 +832,23 @@ los_lm_summary</code></pre>
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -2.4868 -0.7454 -0.0476  0.6394  3.9673 
+## -2.5380 -0.7301 -0.0349  0.6397  3.7398 
 ## 
 ## Coefficients:
 ##                      Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)        -0.3354399  0.0391040  -8.578  &lt; 2e-16 ***
-## statushomeless      0.2291710  0.0664632   3.448 0.000567 ***
-## age                 0.0212232  0.0004493  47.234  &lt; 2e-16 ***
-## sexM                0.0143036  0.0191024   0.749 0.454002    
-## da_disorderTRUE     0.4162168  0.0298029  13.966  &lt; 2e-16 ***
-## mental_illnessTRUE  0.4815997  0.0348580  13.816  &lt; 2e-16 ***
+## (Intercept)        -0.0053354  0.0301518  -0.177  0.85955    
+## statushomeless      0.2047494  0.0663187   3.087  0.00202 ** 
+## age                 0.0226765  0.0004333  52.335  &lt; 2e-16 ***
+## sexM                0.0303671  0.0190343   1.595  0.11065    
+## da_disorderTRUE     0.4098706  0.0297109  13.795  &lt; 2e-16 ***
+## mental_illnessTRUE  0.9333166  0.0582996  16.009  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.9643 on 11223 degrees of freedom
-## Multiple R-squared:  0.2214, Adjusted R-squared:  0.2211 
-## F-statistic: 638.3 on 5 and 11223 DF,  p-value: &lt; 2.2e-16</code></pre>
-<p>We observe that the variable <code>sex</code> (P = 0.026837) didn’t contribute to the model. As such we eliminate the terms from the modelling to reach our final model.</p>
+## Residual standard error: 0.9616 on 11223 degrees of freedom
+## Multiple R-squared:  0.2258, Adjusted R-squared:  0.2255 
+## F-statistic: 654.8 on 5 and 11223 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>We observe that the variable <code>sex</code> (P = 0.0275319) didn’t contribute to the model. As such we eliminate the terms from the modelling to reach our final model.</p>
 <pre class="r"><code>los_lm_final &lt;- lm(los_trans ~ status + age + da_disorder + mental_illness,
                    data = homeless_data)
 
@@ -818,32 +861,32 @@ los_lm_final_summary</code></pre>
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -2.4806 -0.7508 -0.0543  0.6422  3.9576 
+## -2.5529 -0.7415 -0.0343  0.6437  3.7199 
 ## 
 ## Coefficients:
-##                      Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)        -0.3244777  0.0362594  -8.949  &lt; 2e-16 ***
-## statushomeless      0.2301073  0.0664501   3.463 0.000536 ***
-## age                 0.0211634  0.0004421  47.865  &lt; 2e-16 ***
-## da_disorderTRUE     0.4177091  0.0297356  14.047  &lt; 2e-16 ***
-## mental_illnessTRUE  0.4826810  0.0348274  13.859  &lt; 2e-16 ***
+##                     Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)        0.0196283  0.0257756   0.762  0.44637    
+## statushomeless     0.2069279  0.0663092   3.121  0.00181 ** 
+## age                0.0225571  0.0004268  52.851  &lt; 2e-16 ***
+## da_disorderTRUE    0.4133581  0.0296324  13.950  &lt; 2e-16 ***
+## mental_illnessTRUE 0.9317509  0.0582953  15.983  &lt; 2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 0.9643 on 11224 degrees of freedom
-## Multiple R-squared:  0.2214, Adjusted R-squared:  0.2211 
-## F-statistic: 797.8 on 4 and 11224 DF,  p-value: &lt; 2.2e-16</code></pre>
+## Residual standard error: 0.9616 on 11224 degrees of freedom
+## Multiple R-squared:  0.2257, Adjusted R-squared:  0.2254 
+## F-statistic: 817.8 on 4 and 11224 DF,  p-value: &lt; 2.2e-16</code></pre>
 <p>From this final model we can determine that that:</p>
 <ul>
-<li>Homeless patients are expected to have stay 25.87% longer in hospital than domiciled patients (95% CI = 0.1050089, 0.4338473, P = 5.3646589^{-4}).</li>
-<li>For each year increase of patients age, the length of stay is expected to increase by 2.14% (95% CI = 0.0205041, 0.0222745, P = 0).</li>
-<li>Patients with drug and alcohol disorders are expected to have stay 51.85% longer in hospital than those without (95% CI = 0.4325012, 0.6096168, P = 1.8993744^{-44}).</li>
-<li>Patients with associated mental illness are expected to have stay 62.04% longer in hospital than those without (95% CI = 0.5134824, 0.7348984, P = 2.5423246^{-43}).</li>
+<li>Homeless patients are expected to have stay 22.99% longer in hospital than domiciled patients (95% CI = 0.0799882, 0.4006068, P = 0.0018091).</li>
+<li>For each year increase of patients age, the length of stay is expected to increase by 2.28% (95% CI = 0.0219581, 0.0236695, P = 0).</li>
+<li>Patients with drug and alcohol disorders are expected to have stay 51.19% longer in hospital than those without (95% CI = 0.4265705, 0.6023044, P = 7.3546154^{-44}).</li>
+<li>Patients with associated mental illness are expected to have stay 153.90% longer in hospital than those without (95% CI = 1.2647896, 1.8463002, P = 7.0748735^{-57}).</li>
 </ul>
 </div>
 <div id="icu-admission" class="section level3">
 <h3>ICU Admission</h3>
-<p>To determine the effects on ICU admission risk during surgery we fit a logistic regression model to our dataset as so:</p>
+<p>To determine the effects on ICU admission risk during surgery, we fit a logistic regression model to our dataset as so:</p>
 <pre class="r"><code>icu_glm &lt;- glm(icu_admission ~ status + age + sex + da_disorder + mental_illness, 
                family = binomial(),
                data = homeless_data)
@@ -857,27 +900,27 @@ icu_glm_summary</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -1.2196  -0.5987  -0.4578  -0.2901   3.1935  
+## -1.6262  -0.5796  -0.4407  -0.3290   2.7198  
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -6.219498   0.347092 -17.919  &lt; 2e-16 ***
-## statushomeless      0.122733   0.181878   0.675      0.5    
-## age                 0.026192   0.001446  18.118  &lt; 2e-16 ***
-## sexM                0.813201   0.064445  12.619  &lt; 2e-16 ***
-## da_disorderTRUE     0.677757   0.078799   8.601  &lt; 2e-16 ***
-## mental_illnessTRUE  2.260338   0.338350   6.680 2.38e-11 ***
+## (Intercept)        -4.254327   0.116223 -36.605   &lt;2e-16 ***
+## statushomeless      0.093316   0.184610   0.505    0.613    
+## age                 0.029039   0.001434  20.255   &lt;2e-16 ***
+## sexM                0.838752   0.064616  12.980   &lt;2e-16 ***
+## da_disorderTRUE     0.683314   0.080139   8.527   &lt;2e-16 ***
+## mental_illnessTRUE  1.189047   0.135100   8.801   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 9021.5  on 11228  degrees of freedom
-## Residual deviance: 8314.3  on 11223  degrees of freedom
-## AIC: 8326.3
+## Residual deviance: 8342.7  on 11223  degrees of freedom
+## AIC: 8354.7
 ## 
-## Number of Fisher Scoring iterations: 7</code></pre>
-<p>We observe that the variable <code>status</code> (P = 0.6051498) didn’t contribute to the model. As such we eliminate the term from the modelling to reach our final model.</p>
+## Number of Fisher Scoring iterations: 5</code></pre>
+<p>We observe that the variable <code>status</code> (P = 0.6264319) didn’t contribute to the model. As such we eliminate the term from the modelling to reach our final model.</p>
 <pre class="r"><code>icu_glm_final &lt;- glm(icu_admission ~ age + sex + da_disorder + mental_illness,
                 family = binomial(),
                 data = homeless_data)
@@ -891,37 +934,36 @@ icu_glm_final_summary</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -1.2239  -0.5986  -0.4584  -0.2904   3.1936  
+## -1.6312  -0.5795  -0.4411  -0.3292   2.7190  
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -6.217421   0.347066 -17.914  &lt; 2e-16 ***
-## age                 0.026142   0.001443  18.117  &lt; 2e-16 ***
-## sexM                0.813837   0.064437  12.630  &lt; 2e-16 ***
-## da_disorderTRUE     0.687962   0.077256   8.905  &lt; 2e-16 ***
-## mental_illnessTRUE  2.262383   0.338333   6.687 2.28e-11 ***
+## (Intercept)        -4.251456   0.116041 -36.637   &lt;2e-16 ***
+## age                 0.029003   0.001431  20.262   &lt;2e-16 ***
+## sexM                0.839197   0.064610  12.989   &lt;2e-16 ***
+## da_disorderTRUE     0.690939   0.078652   8.785   &lt;2e-16 ***
+## mental_illnessTRUE  1.192484   0.134945   8.837   &lt;2e-16 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 9021.5  on 11228  degrees of freedom
-## Residual deviance: 8314.7  on 11224  degrees of freedom
-## AIC: 8324.7
+## Residual deviance: 8342.9  on 11224  degrees of freedom
+## AIC: 8352.9
 ## 
-## Number of Fisher Scoring iterations: 7</code></pre>
+## Number of Fisher Scoring iterations: 5</code></pre>
 <p>From this final model we can determine that that:</p>
 <ul>
-<li>For each year of age, the likelihood of ICU admission increases by 2.65% (95% CI = 0.0236, 0.029407, P = 2.3568356^{-73}).</li>
-<li>Male patients are 125.65% more likely to experience ICU admission than females (95% CI = 0.9904955, 1.5625999, P = 1.4443387^{-36}).</li>
-<li>Patients with drug and alcohol disorders are 98.97% more likely to experience ICU admission than those without (95% CI = 0.7081362, 1.312529, P = 5.3406095^{-19}).</li>
-<li>Patients with associated mental illnesses are 860.60% more likely to experience ICU admission than those without (95% CI = 4.2655636, 19.1487893, P = 2.2801694^{-11}).</li>
+<li>For each year of age, the likelihood of ICU admission increases by 2.94% (95% CI = 0.0265568, 0.0323338, P = 2.7790477^{-91}).</li>
+<li>Male patients are 131.45% more likely to experience ICU admission than females (95% CI = 1.0409612, 1.6293498, P = 1.418339^{-38}).</li>
+<li>Patients with drug and alcohol disorders are 99.56% more likely to experience ICU admission than those without (95% CI = 0.7083951, 1.3255683, P = 1.566253^{-18}).</li>
+<li>Patients with associated mental illnesses are 229.53% more likely to experience ICU admission than those without (95% CI = 1.5226306, 3.283648, P = 9.851349^{-19}).</li>
 </ul>
 </div>
 <div id="icu-hours" class="section level3">
 <h3>ICU Hours</h3>
-<p>To determine the effects on a patient’s length of stay in ICU we fit linear models to our dataset.</p>
-<p>To do this firstly we need to make a log transform to our outcome variable in order to fit the model properly.</p>
+<p>To determine the effects on a patient’s length of stay in ICU, we fit linear models to our data set. Firstly, we need to make a log transform to our outcome variable to fit the model properly.</p>
 <pre class="r"><code>homeless_data &lt;- homeless_data %&gt;%
   mutate(icu_hrs_trans = ifelse(icu_hrs == 0, NA, log(icu_hrs)))
 
@@ -937,58 +979,58 @@ icu_lm_summary</code></pre>
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -4.0067 -0.7635 -0.0718  0.6788  3.3234 
+## -3.9625 -0.7500 -0.0791  0.6740  3.3445 
 ## 
 ## Coefficients:
 ##                     Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)         3.726149   0.373634   9.973  &lt; 2e-16 ***
-## statushomeless     -0.093440   0.171947  -0.543 0.586915    
-## age                -0.003498   0.001585  -2.207 0.027434 *  
-## sexM                0.102020   0.062428   1.634 0.102420    
-## da_disorderTRUE     0.271758   0.074268   3.659 0.000262 ***
-## mental_illnessTRUE  0.245029   0.363350   0.674 0.500182    
+## (Intercept)         3.904283   0.122435  31.889  &lt; 2e-16 ***
+## statushomeless     -0.122457   0.171347  -0.715 0.474920    
+## age                -0.002972   0.001579  -1.882 0.059958 .  
+## sexM                0.114725   0.062221   1.844 0.065400 .  
+## da_disorderTRUE     0.245478   0.074234   3.307 0.000965 ***
+## mental_illnessTRUE  0.428124   0.112493   3.806 0.000147 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 1.084 on 1546 degrees of freedom
+## Residual standard error: 1.079 on 1546 degrees of freedom
 ##   (9677 observations deleted due to missingness)
-## Multiple R-squared:  0.01786,    Adjusted R-squared:  0.01468 
-## F-statistic: 5.622 on 5 and 1546 DF,  p-value: 3.83e-05</code></pre>
-<p>We observe that the variables <code>status</code> (P = 0.5869151), <code>sex</code> (P = 0.1024203) and <code>mental_illness</code> (P = 0.5001821) don’t contribute to the model. As such we eliminate these terms from the modelling to reach our final model.</p>
-<pre class="r"><code>icu_lm_final &lt;- lm(icu_hrs_trans ~ age + da_disorder, 
+## Multiple R-squared:  0.02669,    Adjusted R-squared:  0.02354 
+## F-statistic: 8.478 on 5 and 1546 DF,  p-value: 6.281e-08</code></pre>
+<p>We observe that the variables <code>status</code> (P = 0.4749197), <code>age</code> (P = 0.0599577), and <code>sex</code> (P = 0.0654002).</p>
+<pre class="r"><code>icu_lm_final &lt;- lm(icu_hrs_trans ~ da_disorder + mental_illness, 
              data = homeless_data)
 
 icu_lm_final_summary &lt;- icu_lm_final %&gt;% summary
 icu_lm_final_summary</code></pre>
 <pre><code>## 
 ## Call:
-## lm(formula = icu_hrs_trans ~ age + da_disorder, data = homeless_data)
+## lm(formula = icu_hrs_trans ~ da_disorder + mental_illness, data = homeless_data)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.9810 -0.7598 -0.0723  0.6857  3.3552 
+## -3.7870 -0.7425 -0.0735  0.6725  3.3892 
 ## 
 ## Coefficients:
-##                  Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)      4.050070   0.108710  37.256  &lt; 2e-16 ***
-## age             -0.003635   0.001572  -2.312 0.020891 *  
-## da_disorderTRUE  0.274247   0.073358   3.738 0.000192 ***
+##                    Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)         3.78703    0.03085 122.775  &lt; 2e-16 ***
+## da_disorderTRUE     0.27882    0.07171   3.888 0.000105 ***
+## mental_illnessTRUE  0.43080    0.11211   3.843 0.000127 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## Residual standard error: 1.084 on 1549 degrees of freedom
+## Residual standard error: 1.081 on 1549 degrees of freedom
 ##   (9677 observations deleted due to missingness)
-## Multiple R-squared:  0.01568,    Adjusted R-squared:  0.0144 
-## F-statistic: 12.33 on 2 and 1549 DF,  p-value: 4.85e-06</code></pre>
+## Multiple R-squared:  0.0216, Adjusted R-squared:  0.02034 
+## F-statistic:  17.1 on 2 and 1549 DF,  p-value: 4.501e-08</code></pre>
 <p>From this final model we can determine that that:</p>
 <ul>
-<li>For each year increase of patients age, the length of stay in ICU is expected to increase by -0.36% (95% CI = -0.0066963, -5.5135978^{-4}, P = 0.0208911).</li>
-<li>Patients with drug and alcohol disorders are expected to have stay 31.55% longer in ICU than those without (95% CI = 0.1392333, 0.5191321, P = 1.918777^{-4}).</li>
+<li>Patients with drug and alcohol disorders are expected to have stay 32.16% longer in ICU than those without (95% CI = 0.1481554, 0.5211767, P = 1.0533153^{-4}).</li>
+<li>Patients with associated mental illnesses are 53.85% more likely to experience ICU admission than those without (95% CI = 0.2347983, 0.9168757, P = 1.2653893^{-4}).</li>
 </ul>
 </div>
 <div id="discharge-at-own-risk" class="section level3">
 <h3>Discharge At Own Risk</h3>
-<p>To determine the effects on patients risk to discharge themselves at their own risk post surgery we fit a logistic regression model to our dataset as so:</p>
+<p>To determine the effects on patients risk to discharge themselves at their risk post-surgery, we fit a logistic regression model to our data set as so:</p>
 <pre class="r"><code>daor_glm &lt;- glm(daor ~ status + age + sex + da_disorder  + mental_illness, 
                 family = binomial(),
                 data = homeless_data)
@@ -1002,40 +1044,39 @@ daor_glm_summary</code></pre>
 ## 
 ## Deviance Residuals: 
 ##     Min       1Q   Median       3Q      Max  
-## -0.8271  -0.2038  -0.1591  -0.1206   3.3957  
+## -0.8500  -0.1978  -0.1602  -0.1293   3.2388  
 ## 
 ## Coefficients:
-##                    Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)        -5.03143    0.53619  -9.384  &lt; 2e-16 ***
-## statushomeless      1.43329    0.22560   6.353 2.11e-10 ***
-## age                -0.01923    0.00388  -4.957 7.16e-07 ***
-## sexM                0.47912    0.16719   2.866  0.00416 ** 
-## da_disorderTRUE     1.26404    0.15444   8.185 2.73e-16 ***
-## mental_illnessTRUE  1.43879    0.51191   2.811  0.00494 ** 
+##                     Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)        -3.809923   0.247304 -15.406  &lt; 2e-16 ***
+## statushomeless      1.446524   0.226781   6.379 1.79e-10 ***
+## age                -0.017021   0.003847  -4.425 9.67e-06 ***
+## sexM                0.498747   0.167122   2.984  0.00284 ** 
+## da_disorderTRUE     1.342531   0.155513   8.633  &lt; 2e-16 ***
+## mental_illnessTRUE  0.183714   0.331354   0.554  0.57928    
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
 ## (Dispersion parameter for binomial family taken to be 1)
 ## 
 ##     Null deviance: 2118.9  on 11228  degrees of freedom
-## Residual deviance: 1924.7  on 11223  degrees of freedom
-## AIC: 1936.7
+## Residual deviance: 1936.9  on 11223  degrees of freedom
+## AIC: 1948.9
 ## 
-## Number of Fisher Scoring iterations: 8</code></pre>
+## Number of Fisher Scoring iterations: 7</code></pre>
 <p>Given that all the variables in this model show significant effects we can determine that that:</p>
 <ul>
-<li>Homeless patients are 319.25% more likely to discharge themselves at their own risk than domiciled patients (95% CI = 1.6543695, 5.4425832, P = 2.1088313^{-10}).</li>
-<li>For each year of age, the likelihood of discharge themselves at their own risk decreases by -1.90% (95% CI = -0.0269393, -0.0117165, P = 7.1552419^{-7}).</li>
-<li>Male patients are 61.46% more likely to discharge themselves at their own risk than females (95% CI = 1.1727348, 2.2617689, P = 0.0041596).</li>
-<li>Patients with drug and alcohol disorders are 253.97% more likely to discharge themselves at their own risk than those without (95% CI = 0.9575069, 1.5637188, P = 2.7324196^{-16}).</li>
-<li>Patients with associated mental illnesses are 321.56% more likely to discharge themselves at their own risk than those without (95% CI = 0.7585387, 12.8072509, P = 0.0049445).</li>
+<li>Homeless patients are 324.83% more likely to discharge themselves at their own risk than domiciled patients (95% CI = 1.6839209, 5.5443899, P = 1.7882226^{-10}).</li>
+<li>For each year of age, the likelihood of discharge themselves at their own risk decreases by -1.69% (95% CI = -0.0246709, -0.0095751, P = 9.6660591^{-6}).</li>
+<li>Male patients are 64.67% more likely to discharge themselves at their own risk than females (95% CI = 1.1961355, 2.3063555, P = 0.0028419).</li>
+<li>Patients with drug and alcohol disorders are 282.87% more likely to discharge themselves at their own risk than those without (95% CI = 1.0336437, 1.644028, P = 5.9796273^{-18}).</li>
 </ul>
 </div>
 </div>
 </div>
 <div id="conclusions" class="section level1">
 <h1>Conclusions</h1>
-<p>By fitting sets of models to our outcomes variables we have been able to determine that the only effects homelessness has on surgical outcomes and increase to a patients length of stay and risk of discharge at own risk. All other analysed outcomes are associated with other confounding variables that are often associated with homelessness itself.</p>
+<p>By fitting sets of models to our outcome variables, we have determined that homelessness only affects a patient’s length of stay and risk of discharge at own risk. All other analysed outcomes are associated with other confounding variables that are often associated with homelessness itself.</p>
 </div>
 
 
