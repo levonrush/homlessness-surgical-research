@@ -2,7 +2,7 @@
 title: "Impact of homelessness on surgical outcomes"
 output:
   html_document:
-    df_print: paged
+    toc: true
 ---
 
 # Background
@@ -10,6 +10,10 @@ output:
 The following observational analysis has been designed to determine the impact of homelessness on surgical outcomes. To assess this impact, if any, we fit several linear models containing their housing status and other potentially confounding variables to determine whether there is an impact and quantify it.
 
 The St Vincent's Hospital Sydney Coding Office (SVHSCO) provided the data sets relating to these outcomes.
+
+# Methods
+
+Binary logistic regression and linear logistic regression were used to analyse associations between our complication factors as independent variables to each endpoint. Using the outputs from these models, we determine which variables have a significant effect on each outcome. We then remove the non-significant variables from the models to arrive at final models from which we can determine effect sizes for each complication factor.
 
 ## Enpoints
 
@@ -113,9 +117,9 @@ homeless_data %>%
   skim()
 ```
 
-# Analysis
+# Results
 
-## Primary Efficacy Endpoint
+## Primary Efficacy Endpoint - Surgical complication
 
 To determine the effects on complication risk during surgery we fit a logistic regression model to our dataset as so:
 
@@ -132,8 +136,8 @@ We observe that the variable `status` (P = `r comp_glm_summary$coefficients["sta
 
 ```{r, message=FALSE, warning=FALSE}
 comp_glm_final <- glm(complication ~ age + sex + da_disorder + mental_illness, 
-                family = binomial(),
-                data = homeless_data)
+                      family = binomial(),
+                      data = homeless_data)
 
 comp_glm_final_summary <- comp_glm_final %>% summary
 comp_glm_final_summary
@@ -165,8 +169,8 @@ We observe that the variables `status` (P = `r mort_glm_summary$coefficients["st
 
 ```{r, message=FALSE, warning=FALSE}
 mort_glm_final <- glm(mortality ~ age + sex, 
-                family = binomial(),
-                data = homeless_data)
+                      family = binomial(),
+                      data = homeless_data)
 
 mort_glm_final_summary <- mort_glm %>% summary
 mort_glm_final_summary
@@ -227,8 +231,8 @@ We observe that the variable `status` (P = `r mort_glm_summary $coefficients["st
 
 ```{r, message=FALSE, warning=FALSE}
 icu_glm_final <- glm(icu_admission ~ age + sex + da_disorder + mental_illness,
-                family = binomial(),
-                data = homeless_data)
+                     family = binomial(),
+                     data = homeless_data)
 
 icu_glm_final_summary <- icu_glm_final %>% summary
 icu_glm_final_summary
@@ -260,7 +264,7 @@ We observe that the variables `status` (P = `r icu_lm_summary$coefficients["stat
 
 ```{r, message=FALSE, warning=FALSE}
 icu_lm_final <- lm(icu_hrs_trans ~ da_disorder + mental_illness, 
-             data = homeless_data)
+                   data = homeless_data)
 
 icu_lm_final_summary <- icu_lm_final %>% summary
 icu_lm_final_summary
@@ -276,7 +280,7 @@ From this final model we can determine that that:
 To determine the effects on patients risk to discharge themselves at their risk post-surgery, we fit a logistic regression model to our data set as so:
 
 ```{r, message=FALSE, warning=FALSE}
-daor_glm <- glm(daor ~ status + age + sex + da_disorder  + mental_illness, 
+daor_glm <- glm(daor ~ status + age + sex + da_disorder + mental_illness, 
                 family = binomial(),
                 data = homeless_data)
 
@@ -284,7 +288,18 @@ daor_glm_summary <- daor_glm %>% summary
 daor_glm_summary
 ```
 
-Given that all the variables in this model show significant effects we can determine that that:
+We observe that the variable `mental_illness` (P = `r daor_glm_summary$coefficients["mental_illnessTRUE", 4]`) didn't contribute to the model. As such we eliminate the term from the modelling to reach our final model.
+
+```{r}
+daor_glm_final <- glm(daor ~ status + age + sex + da_disorder, 
+                      family = binomial(),
+                      data = homeless_data)
+
+daor_glm_final_summary <- daor_glm %>% summary
+daor_glm_final_summary
+```
+
+From this final model we can determine that that:
 
 * Homeless patients are `r percent(exp(daor_glm$coefficients[["statushomeless"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than domiciled patients (95% CI = `r exp(confint(daor_glm)["statushomeless",])-1`, P = `r daor_glm_summary$coefficients["statushomeless", 4]`).
 * For each year of age, the likelihood of discharge themselves at their own risk decreases by `r percent(exp(daor_glm$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r confint(daor_glm)["age",]`, P = `r daor_glm_summary$coefficients["age", 4]`).
