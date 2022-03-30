@@ -53,9 +53,13 @@ First we set up our environment by loading the following packages.
 library(googlesheets4)
 library(googledrive)
 library(tidyverse)
+library(reshape2)
 library(janitor)
 library(skimr)
 library(scales)
+library(ggplot2)
+library(ggpubr)
+library(chisq.posthoc.test)
 ```
 
 # Data load, clean and feature engineering
@@ -72,7 +76,7 @@ The features we generate are:
 
 * `complication`: a logical variable as defined by the inclusion of `assoc_diseases` beginning with `T8`.
 * `icu_admission`: logical variable defined by the `icu_hrs` variable greater than 0.
-* `da_disorder`: a logical variable defined by the inclusion of `assoc_diseases` beginning with `F1`.
+* `da_disorder`: a logical variable defined by the inclusion of `assoc_diseases` beginning with `F1`, except `F17`.
 * `mental_illness`: a logical variable defined by the inclusion of `assoc_diseases` beginning with `F2`, `F3` or `F4`.
 * `doar`: as logical variable as defined by a `discharge_status` equal to `Discharge at Own Risk.`
 
@@ -102,14 +106,14 @@ homeless_data <- homeless_data %>%
   mutate(complication = ifelse(str_detect(assoc_diseases, "T8"), T, F),
          mortality = ifelse(str_detect(as.character(discharge_status), "DEATH"), T, F),
          icu_admission = ifelse(icu_hrs > 0, T, F),
-         da_disorder = ifelse(str_detect(assoc_diseases, "F1"), T, F), 
+         da_disorder = str_detect(assoc_diseases, paste(paste0("F", c(10:16, 18:19)), collapse = "|")),
          mental_illness = case_when(
            str_detect(assoc_diseases, "F2") ~ T,
            str_detect(assoc_diseases, "F3") ~ T,
            str_detect(assoc_diseases, "F4") ~ T,
            TRUE ~ F
            ),
-         daor = ifelse(discharge_status == "Discharge at Own Risk", T, F)) 
+         daor = ifelse(discharge_status == "Discharge at Own Risk", T, F))
 
 # skim set by status group
 homeless_data %>%
@@ -132,7 +136,7 @@ comp_glm_summary <- comp_glm %>% summary
 comp_glm_summary
 ```
 
-We observe that the variable `status` (P = `r comp_glm_summary$coefficients["statushomeless", 4]`) didn't contribute to the model. As such, we eliminate the term from the modelling to reach our final model.
+We observe that the variable `status` (P = `r comp_glm_summary$coefficients["statushomeless", 4]`) didn't contribute to the model. As such we eliminate the term from the modelling to reach our final model.
 
 ```{r, message=FALSE, warning=FALSE}
 comp_glm_final <- glm(complication ~ age + sex + da_disorder + mental_illness, 
@@ -145,10 +149,10 @@ comp_glm_final_summary
 
 From this final model we can determine that that:
 
-* For each year of age, the likelihood of surgical complication increases by `r percent(exp(comp_glm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(comp_glm_final)["age",])-1`, P = `r comp_glm_final_summary$coefficients["age", 4]`).
-* Male patients are `r percent(exp(comp_glm_final$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to experience surgical complication than females (95% CI = `r exp(confint(comp_glm_final)["sexM",])-1`, P = `r comp_glm_final_summary$coefficients["sexM", 4]`).
-* Patients with drug and alcohol disorders are `r percent(exp(comp_glm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` more likely to experience surgical complication than those without (95% CI = `r exp(confint(comp_glm_final)["da_disorderTRUE",])-1`, P = `r comp_glm_final_summary$coefficients["da_disorderTRUE", 4]`).
-* Patients with associated mental illness are expected to have stay `r percent(exp(comp_glm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` longer in hospital than those without (95% CI = `r exp(confint(comp_glm_final)["mental_illnessTRUE",])-1`, P = `r comp_glm_final_summary$coefficients["mental_illnessTRUE", 4]`).
+* For each year of age, the risk of surgical complication increases by a factor of `r exp(comp_glm_final$coefficients[["age"]])` (95% CI = `r exp(confint(comp_glm_final)["age",])`, P = `r comp_glm_final_summary$coefficients["age", 4]`).
+* Male patients are `r exp(comp_glm_final$coefficients[["sexM"]])` times more likely to experience surgical complication than females (95% CI = `r exp(confint(comp_glm_final)["sexM",])`, P = `r comp_glm_final_summary$coefficients["sexM", 4]`).
+* Patients with drug and alcohol disorders are `r exp(comp_glm_final$coefficients[["da_disorderTRUE"]])` times more likely to experience surgical complication than those without (95% CI = `r exp(confint(comp_glm_final)["da_disorderTRUE",])`, P = `r comp_glm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illness are `r exp(comp_glm_final$coefficients[["mental_illnessTRUE"]])` times more likely to experience surgical complication than those without (95% CI = `r exp(confint(comp_glm_final)["mental_illnessTRUE",])`, P = `r comp_glm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ## Secondary Enpoints
 
@@ -172,14 +176,14 @@ mort_glm_final <- glm(mortality ~ age + sex,
                       family = binomial(),
                       data = homeless_data)
 
-mort_glm_final_summary <- mort_glm %>% summary
+mort_glm_final_summary <- mort_glm_final %>% summary
 mort_glm_final_summary
 ```
 
 From this final model we can determine that that:
 
-* For each year of age, the likelihood of mortality increases by `r percent(exp(mort_glm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(mort_glm_final)["age",])`, P = `r mort_glm_final_summary$coefficients["age", 4]`).
-* Male patients are `r percent(exp(mort_glm_final$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to experience mortality than females (95% CI = `r exp(confint(mort_glm_final)["sexM",])-1`, P = `r mort_glm_final_summary$coefficients["sexM", 4]`).
+* For each year of age, the risk of mortality increases by `r exp(mort_glm_final$coefficients[["age"]])` times (95% CI = `r exp(confint(mort_glm_final)["age",])`, P = `r mort_glm_final_summary$coefficients["age", 4]`).
+* Male patients are `r exp(mort_glm_final$coefficients[["sexM"]])` times more likely to experience mortality than females (95% CI = `r exp(confint(mort_glm_final)["sexM",])`, P = `r mort_glm_final_summary$coefficients["sexM", 4]`).
 
 ### Length of Stay
 
@@ -197,7 +201,7 @@ los_lm_summary <- los_lm %>% summary
 los_lm_summary
 ```
 
-We observe that the variable `sex` (P = `r mort_glm_summary $coefficients["sexM", 4]`) didn't contribute to the model. As such we eliminate the terms from the modelling to reach our final model.
+We observe that the variable `sex` (P = `r los_lm_summary $coefficients["sexM", 4]`) didn't contribute to the model. As such we eliminate the terms from the modelling to reach our final model.
 
 ```{r, message=FALSE, warning=FALSE}
 los_lm_final <- lm(los_trans ~ status + age + da_disorder + mental_illness,
@@ -209,10 +213,10 @@ los_lm_final_summary
 
 From this final model we can determine that that:
 
-* Homeless patients are expected to have stay `r percent(exp(los_lm_final$coefficients[["statushomeless"]])-1, accuracy = 0.01)` longer in hospital than domiciled patients (95% CI = `r exp(confint(los_lm_final)["statushomeless",])-1`, P = `r los_lm_final_summary$coefficients["statushomeless", 4]`).
-* For each year increase of patients age, the length of stay is expected to increase by `r percent(exp(los_lm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(los_lm_final)["age",])-1`, P = `r los_lm_final_summary$coefficients["age", 4]`).
-* Patients with drug and alcohol disorders are expected to have stay `r percent(exp(los_lm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` longer in hospital than those without (95% CI = `r exp(confint(los_lm_final)["da_disorderTRUE",])-1`, P = `r los_lm_final_summary$coefficients["da_disorderTRUE", 4]`).
-* Patients with associated mental illness are expected to have stay `r percent(exp(los_lm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` longer in hospital than those without (95% CI = `r exp(confint(los_lm_final)["mental_illnessTRUE",])-1`, P = `r los_lm_final_summary$coefficients["mental_illnessTRUE", 4]`).
+* Homeless patients are expected to have stay `r exp(los_lm_final$coefficients[["statushomeless"]])` times longer in hospital than domiciled patients (95% CI = `r exp(confint(los_lm_final)["statushomeless",])`, P = `r los_lm_final_summary$coefficients["statushomeless", 4]`).
+* For each year increase of patients age, the length of stay is expected to increase by `r exp(los_lm_final$coefficients[["age"]])` times (95% CI = `r exp(confint(los_lm_final)["age",])`, P = `r los_lm_final_summary$coefficients["age", 4]`).
+* Patients with drug and alcohol disorders are expected to have stay `r exp(los_lm_final$coefficients[["da_disorderTRUE"]])` times longer in hospital than those without (95% CI = `r exp(confint(los_lm_final)["da_disorderTRUE",])`, P = `r los_lm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illness are expected to have stay `r exp(los_lm_final$coefficients[["mental_illnessTRUE"]])` times longer in hospital than those without (95% CI = `r exp(confint(los_lm_final)["mental_illnessTRUE",])`, P = `r los_lm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ### ICU Admission
 
@@ -240,10 +244,10 @@ icu_glm_final_summary
 
 From this final model we can determine that that:
 
-* For each year of age, the likelihood of ICU admission increases by `r percent(exp(icu_glm_final$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r exp(confint(icu_glm_final)["age",])-1`, P = `r icu_glm_final_summary$coefficients["age", 4]`).
-* Male patients are `r percent(exp(icu_glm_final$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to experience ICU admission than females (95% CI = `r exp(confint(icu_glm_final)["sexM",])-1`, P = `r icu_glm_final_summary$coefficients["sexM", 4]`).
-* Patients with drug and alcohol disorders are `r percent(exp(icu_glm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_glm_final)["da_disorderTRUE",])-1`, P = `r icu_glm_final_summary$coefficients["da_disorderTRUE", 4]`).
-* Patients with associated mental illnesses are `r percent(exp(icu_glm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_glm_final)["mental_illnessTRUE",])-1`, P = `r icu_glm_final_summary$coefficients["mental_illnessTRUE", 4]`).
+* For each year of age, the risk of ICU admission increases by `r exp(icu_glm_final$coefficients[["age"]])` times (95% CI = `r exp(confint(icu_glm_final)["age",])`, P = `r icu_glm_final_summary$coefficients["age", 4]`).
+* Male patients are `r exp(icu_glm_final$coefficients[["sexM"]])` times more likely to experience ICU admission than females (95% CI = `r exp(confint(icu_glm_final)["sexM",])`, P = `r icu_glm_final_summary$coefficients["sexM", 4]`).
+* Patients with drug and alcohol disorders are `r exp(icu_glm_final$coefficients[["da_disorderTRUE"]])` times more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_glm_final)["da_disorderTRUE",])`, P = `r icu_glm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illnesses are `r exp(icu_glm_final$coefficients[["mental_illnessTRUE"]])` times more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_glm_final)["mental_illnessTRUE",])`, P = `r icu_glm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ### ICU Hours
 
@@ -260,7 +264,8 @@ icu_lm_summary <- icu_lm %>% summary
 icu_lm_summary
 ```
 
-We observe that the variables `status` (P = `r icu_lm_summary$coefficients["statushomeless", 4]`), `age` (P = `r icu_lm_summary$coefficients["age", 4]`), and `sex` (P = `r icu_lm_summary$coefficients["sexM", 4]`).
+We observe that the variables `status` (P = `r icu_lm_summary$coefficients["statushomeless", 4]`)
+`age` (P = `r icu_lm_summary$coefficients["age", 4]`) and `sex` (P = `r icu_lm_summary$coefficients["sexM", 4]`) didn't contribute to the model. As such we eliminate the terms from the modelling to reach our final model.
 
 ```{r, message=FALSE, warning=FALSE}
 icu_lm_final <- lm(icu_hrs_trans ~ da_disorder + mental_illness, 
@@ -272,8 +277,8 @@ icu_lm_final_summary
 
 From this final model we can determine that that:
 
-* Patients with drug and alcohol disorders are expected to have stay `r percent(exp(icu_lm_final$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` longer in ICU than those without (95% CI = `r exp(confint(icu_lm_final)["da_disorderTRUE",])-1`, P = `r icu_lm_final_summary$coefficients["da_disorderTRUE", 4]`).
-* Patients with associated mental illnesses are `r percent(exp(icu_lm_final$coefficients[["mental_illnessTRUE"]])-1, accuracy = 0.01)` more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_lm_final)["mental_illnessTRUE",])-1`, P = `r icu_lm_final_summary$coefficients["mental_illnessTRUE", 4]`).
+* Patients with drug and alcohol disorders are `r exp(icu_lm_final$coefficients[["da_disorderTRUE"]])` times longer in ICU admission than those without (95% CI = `r exp(confint(icu_lm_final)["da_disorderTRUE",])`, P = `r icu_lm_final_summary$coefficients["da_disorderTRUE", 4]`).
+* Patients with associated mental illnesses are `r exp(icu_lm_final$coefficients[["mental_illnessTRUE"]])` times more likely to experience ICU admission than those without (95% CI = `r exp(confint(icu_lm_final)["mental_illnessTRUE",])`, P = `r icu_lm_final_summary$coefficients["mental_illnessTRUE", 4]`).
 
 ### Discharge At Own Risk
 
@@ -290,21 +295,126 @@ daor_glm_summary
 
 We observe that the variable `mental_illness` (P = `r daor_glm_summary$coefficients["mental_illnessTRUE", 4]`) didn't contribute to the model. As such we eliminate the term from the modelling to reach our final model.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 daor_glm_final <- glm(daor ~ status + age + sex + da_disorder, 
                       family = binomial(),
                       data = homeless_data)
 
-daor_glm_final_summary <- daor_glm %>% summary
+daor_glm_final_summary <- daor_glm_final %>% summary
 daor_glm_final_summary
 ```
 
 From this final model we can determine that that:
 
-* Homeless patients are `r percent(exp(daor_glm$coefficients[["statushomeless"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than domiciled patients (95% CI = `r exp(confint(daor_glm)["statushomeless",])-1`, P = `r daor_glm_summary$coefficients["statushomeless", 4]`).
-* For each year of age, the likelihood of discharge themselves at their own risk decreases by `r percent(exp(daor_glm$coefficients[["age"]])-1, accuracy = 0.01)` (95% CI = `r confint(daor_glm)["age",]`, P = `r daor_glm_summary$coefficients["age", 4]`).
-* Male patients are `r percent(exp(daor_glm$coefficients[["sexM"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than females (95% CI = `r exp(confint(daor_glm)["sexM",])`, P = `r daor_glm_summary$coefficients["sexM", 4]`).
-* Patients with drug and alcohol disorders are `r percent(exp(daor_glm$coefficients[["da_disorderTRUE"]])-1, accuracy = 0.01)` more likely to discharge themselves at their own risk than those without (95% CI = `r confint(daor_glm)["da_disorderTRUE",]`, P = `r daor_glm_summary$coefficients["da_disorderTRUE", 4]`).
+* Homeless patients are `r exp(daor_glm$coefficients[["statushomeless"]])` times more likely to discharge themselves at their own risk than domiciled patients (95% CI = `r exp(confint(daor_glm)["statushomeless",])`, P = `r daor_glm_summary$coefficients["statushomeless", 4]`).
+* For each year of age, the likelihood of discharge themselves at their own risk decreases by `r exp(daor_glm$coefficients[["age"]])` (95% CI = `r confint(daor_glm)["age",]`, P = `r daor_glm_summary$coefficients["age", 4]`).
+* Male patients are `r exp(daor_glm$coefficients[["sexM"]])` more likely to discharge themselves at their own risk than females (95% CI = `r exp(confint(daor_glm)["sexM",])`, P = `r daor_glm_summary$coefficients["sexM", 4]`).
+* Patients with drug and alcohol disorders are `r exp(daor_glm$coefficients[["da_disorderTRUE"]])` more likely to discharge themselves at their own risk than those without (95% CI = `r confint(daor_glm)["da_disorderTRUE",]`, P = `r daor_glm_summary$coefficients["da_disorderTRUE", 4]`).
+
+# Prevalence of confounders amongst population groups
+
+## Continuous confounders
+
+```{r, message=FALSE, warning=FALSE}
+# display summary statistics of age across both populations
+homeless_data %>%
+  group_by(status) %>%
+  summarise(ave_age = mean(age),
+            median_age = median(age),
+            sd_age = sd(age),
+            q0 = quantile(age, 0),
+            q25 = quantile(age, 0.25),
+            q75 = quantile(age, 0.75),
+            q100 = quantile(age, 1))
+
+# graph the distributions
+p1 <- homeless_data %>%
+  ggplot(aes(x = status, y = age, fill = status)) + 
+    geom_violin(trim = FALSE) +
+    geom_boxplot(width = 0.1, fill = "white") +
+    labs(title = "", x = "", y = "Age (years)") +
+    theme_classic() +
+    theme(legend.position="none")
+
+p1
+
+# conduct test to find whether medians are different
+kruskal.test(age ~ status, data = homeless_data)
+```
+
+
+## Categorical confounders
+
+```{r, message=FALSE, warning=FALSE}
+# find the contingency tables of confounders amongst both populations
+con_tab <- homeless_data %>%
+  select(status, sex, da_disorder,  mental_illness) %>%
+  lapply(., function(x) table(.$status, x)) %>% .[-1]
+
+con_tab
+
+p2 <- homeless_data %>%
+  mutate(sex = ifelse(sex == 'M', T, F)) %>%
+  group_by(status) %>%
+  summarise_at(vars(sex, da_disorder,  mental_illness), function(x) mean(x)) %>%
+  melt(variable.name = "confounder", value.name = "proportion") %>%
+  ggplot(aes(x = confounder, y = proportion, fill = status)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(title = '',
+         fill = 'Housing status') +
+    ylab('Proportion of population') +
+    xlab('') +
+    scale_x_discrete(labels = c("sex" = "Male", "da_disorder" = "Drug and alcohol disorder", "mental_illness" = "Mental illness")) +
+    theme_classic()
+
+p2
+
+# show these contingency tables as prop tables
+con_tab %>% lapply(., function(x) prop.table(x, margin = 1)) 
+
+# determine whether the odds of their occurrence is different using fisher test
+con_tab %>% lapply(., fisher.test)
+```
+
+```{r, message=FALSE, warning=FALSE}
+# combine the graphs together
+ggarrange(p1, p2,
+          widths = c(0.5, 1),
+          common.legend = T,
+          legend = "bottom")
+```
+
+
+
+# Types of surgery given to the two populations
+
+```{r, message=FALSE, warning=FALSE}
+# generate contingency tables for observed surgeries between groups
+surg_tab <- homeless_data %>%
+  with(table(status, spec))
+
+surg_tab
+
+# show this as bar chat of proportions
+surg_tab %>% prop.table(., margin = 1) %>% 
+  as.data.frame() %>%
+  ggplot(aes(x = spec, y = Freq, fill = status)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    labs(title = 'Distribution of surgical types between different housing statuses',
+         fill = 'Housing status') +
+    ylab('Proportion of surgical cases') +
+    xlab('Surgery Type') +
+    theme_classic()
+
+# chi square test to see if the distributions are different
+surg_tab %>% chisq.test()
+
+# post hoc analysis showing where the differences are
+surg_tab %>% chisq.posthoc.test()
+```
+
+
+
 
 # Conclusions
 
