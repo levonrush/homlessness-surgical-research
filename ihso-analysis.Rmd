@@ -115,6 +115,21 @@ homeless_data <- homeless_data %>%
            ),
          daor = ifelse(discharge_status == "Discharge at Own Risk", T, F))
 
+# add in descriptions for spec
+homeless_data <- homeless_data %>%
+  mutate(spec_desc = case_when(
+    spec == 'CRS'                           ~ 'Colorectal Surgery',
+    spec == 'CTS'                           ~ 'Cardiothoracic Surgery',
+    spec == 'ENT'                           ~ 'Ear, Nose and Throat',
+    spec %in% c('GIT', 'CRS', 'HNO', 'SOC') ~ 'General Surgery',
+    spec == 'NS'                            ~ 'Neurosurgery',
+    spec %in% c('OT1', 'OT2')               ~ 'Orthopaedic Surgery',
+    spec == 'PLS'                           ~ 'Plastic and Reconstructive Surgery',
+    spec == 'URO'                           ~ 'Urology',
+    spec == 'VAS'                           ~ 'Vascular Surgery',
+    TRUE                                    ~ as.character(NA)
+  ) %>% as.factor())
+
 # skim set by status group
 homeless_data %>%
   group_by(status) %>%
@@ -391,20 +406,21 @@ ggarrange(p1, p2,
 ```{r, message=FALSE, warning=FALSE}
 # generate contingency tables for observed surgeries between groups
 surg_tab <- homeless_data %>%
-  with(table(status, spec))
+  with(table(status, spec_desc))
 
 surg_tab
 
 # show this as bar chat of proportions
 surg_tab %>% prop.table(., margin = 1) %>% 
   as.data.frame() %>%
-  ggplot(aes(x = spec, y = Freq, fill = status)) +
+  ggplot(aes(x = spec_desc, y = Freq, fill = status)) +
     geom_bar(stat = "identity", position = position_dodge()) +
     labs(title = 'Distribution of surgical types between different housing statuses',
          fill = 'Housing status') +
+  
     ylab('Proportion of surgical cases') +
     xlab('Surgery Type') +
-    theme_classic()
+    coord_flip() + theme_classic()
 
 # chi square test to see if the distributions are different
 surg_tab %>% chisq.test()
@@ -412,8 +428,6 @@ surg_tab %>% chisq.test()
 # post hoc analysis showing where the differences are
 surg_tab %>% chisq.posthoc.test()
 ```
-
-
 
 
 # Conclusions
