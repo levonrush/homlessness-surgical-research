@@ -118,16 +118,9 @@ homeless_data <- homeless_data %>%
 # add in descriptions for spec
 homeless_data <- homeless_data %>%
   mutate(spec_desc = case_when(
-    spec == 'CRS'                           ~ 'Colorectal Surgery',
-    spec == 'CTS'                           ~ 'Cardiothoracic Surgery',
-    spec == 'ENT'                           ~ 'Ear, Nose and Throat',
-    spec %in% c('GIT', 'CRS', 'HNO', 'SOC') ~ 'General Surgery',
-    spec == 'NS'                            ~ 'Neurosurgery',
-    spec %in% c('OT1', 'OT2')               ~ 'Orthopaedic Surgery',
-    spec == 'PLS'                           ~ 'Plastic and Reconstructive Surgery',
-    spec == 'URO'                           ~ 'Urology',
-    spec == 'VAS'                           ~ 'Vascular Surgery',
-    TRUE                                    ~ as.character(NA)
+    spec %in% c('GIT', 'CRS', 'HNO', 'SOC') ~ 'GS',
+    spec %in% c('OT1', 'OT2')               ~ 'ORT',
+    TRUE                                    ~ as.character(spec)
   ) %>% as.factor())
 
 # skim set by status group
@@ -417,10 +410,9 @@ surg_tab %>% prop.table(., margin = 1) %>%
     geom_bar(stat = "identity", position = position_dodge()) +
     labs(title = 'Distribution of surgical types between different housing statuses',
          fill = 'Housing status') +
-  
     ylab('Proportion of surgical cases') +
     xlab('Surgery Type') +
-    coord_flip() + theme_classic()
+    theme_classic()
 
 # chi square test to see if the distributions are different
 surg_tab %>% chisq.test()
