@@ -103,7 +103,8 @@ homeless_data <- bind_rows(sheets) %>%
 
 # feature engineering
 homeless_data <- homeless_data %>%
-  mutate(complication = ifelse(str_detect(assoc_diseases, "T8"), T, F),
+  mutate(#complication = ifelse(str_detect(assoc_diseases, "T8"), T, F),
+         complication = str_detect(assoc_diseases, paste(paste0("T", 80:87), collapse = "|")),
          mortality = ifelse(str_detect(as.character(discharge_status), "DEATH"), T, F),
          icu_admission = ifelse(icu_hrs > 0, T, F),
          da_disorder = str_detect(assoc_diseases, paste(paste0("F", c(10:16, 18:19)), collapse = "|")),
@@ -130,6 +131,81 @@ homeless_data %>%
 ```
 
 # Results
+
+## Contingency table analysis
+
+### USE THIS ONE
+
+```{r, message=FALSE, warning=FALSE}
+comp_table <- homeless_data %>%
+  with(table(complication, status)) %>%
+  .[order(-as.logical(row.names(.))), ]
+
+comp_table
+
+comp_table %>%
+  fisher.test(., alternative = 'less')
+```
+
+### DON'T USE THIS ONE
+
+```{r, message=FALSE, warning=FALSE}
+library(BayesFactor)
+bcomp_table = comp_table
+
+bcomp_table['FALSE',] <- bcomp_table['FALSE',] + comp_table['TRUE',]
+rownames(bcomp_table)[rownames(bcomp_table) == "FALSE"] <- "n"
+
+# decompose table
+y1 <- bcomp_table[1,1]
+n1 <- bcomp_table[2,1]
+y2 <- bcomp_table[1,2]
+n2 <- bcomp_table[2,2]
+
+# simulate differences
+set.seed(69) # lol
+I = 1000000 # 1 Million Simulations
+theta1 = rbeta(I, y1[[1]] + 1, (n1[[1]] - y1[[1]]) + 1) 
+theta2 = rbeta(I, y2[[1]] + 1, (n2[[1]] - y2[[1]]) + 1)
+diff = theta1 - theta2  # simulated differences
+ 
+# set objective prior (Jefferys' prior)
+p1 = y1/n1
+p2 = y2/n2
+prior <- p1^(-1/2) * (1-p1)^(-1/2) * p2^(-1/2) * (1-p2)^(-1/2)
+#prior = 1
+
+# bayes factor calculation
+bayes_factor <- contingencyTableBF(bcomp_table,
+                                   priorConcentration = prior, 
+                                   sampleType = "poisson")
+
+# calculate probability that FALSE is better than TRUE
+probability <- mean(theta1 > theta2)
+variance <- quantile(diff,c(0.005,0.025,0.5,0.975,0.995))
+   
+# interpret the Bayes factor as evidence towards either hypothesis
+evidence_level <- cut(exp(bayes_factor@bayesFactor$bf),                         
+                      c(0, 1/100, 1/30, 1/10, 1/3, 3, 10, 30, 100, Inf),
+                      labels = c("Extreme H0", "Very Strong H0", "Strong H0", "Moderate H0", "Not Enough Evidence", "Moderate H1", "Strong H1", "Very Strong H1", "Extreme H1"))
+  
+odds_ratio <- fisher.test(comp_table)$estimate
+   
+# collect the outputs into one object
+analysis <- list(contingency_table = bcomp_table,
+                 probability = probability,
+                 variance = variance,
+                 bayes_factor = bayes_factor,
+                 evidence_level = evidence_level,
+                 odds_ratio = odds_ratio)
+
+# spit them out
+analysis$contingency_table
+analysis$bayes_factor 
+analysis$evidence_level
+analysis$probability
+```
+
 
 ## Primary Efficacy Endpoint - Surgical complication
 
@@ -281,6 +357,7 @@ icu_lm_final <- lm(icu_hrs_trans ~ da_disorder + mental_illness,
 
 icu_lm_final_summary <- icu_lm_final %>% summary
 icu_lm_final_summary
+
 ```
 
 From this final model we can determine that that:
