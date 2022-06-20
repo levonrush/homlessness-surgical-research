@@ -1142,16 +1142,16 @@ con_tab %&gt;% lapply(., function(x) prop.table(x, margin = 1)) </code></pre>
 ##   domiciled 0.97619264 0.02380736
 ##   homeless  0.90178571 0.09821429</code></pre>
 <pre class="r"><code># determine whether the odds of their occurrence is different using fisher test
-con_tab %&gt;% lapply(., fisher.test)</code></pre>
+con_tab %&gt;% lapply(., fisher.test, alternative = &#39;greater&#39;)</code></pre>
 <pre><code>## $sex
 ## 
 ##  Fisher&#39;s Exact Test for Count Data
 ## 
 ## data:  X[[i]]
-## p-value = 7.639e-06
-## alternative hypothesis: true odds ratio is not equal to 1
+## p-value = 3.723e-06
+## alternative hypothesis: true odds ratio is greater than 1
 ## 95 percent confidence interval:
-##  1.445403 2.747393
+##  1.515382      Inf
 ## sample estimates:
 ## odds ratio 
 ##   1.979068 
@@ -1163,9 +1163,9 @@ con_tab %&gt;% lapply(., fisher.test)</code></pre>
 ## 
 ## data:  X[[i]]
 ## p-value &lt; 2.2e-16
-## alternative hypothesis: true odds ratio is not equal to 1
+## alternative hypothesis: true odds ratio is greater than 1
 ## 95 percent confidence interval:
-##   8.255126 14.439343
+##  8.620317      Inf
 ## sample estimates:
 ## odds ratio 
 ##   10.91182 
@@ -1177,9 +1177,9 @@ con_tab %&gt;% lapply(., fisher.test)</code></pre>
 ## 
 ## data:  X[[i]]
 ## p-value = 5.158e-08
-## alternative hypothesis: true odds ratio is not equal to 1
+## alternative hypothesis: true odds ratio is greater than 1
 ## 95 percent confidence interval:
-##  2.690580 7.089566
+##  2.92011     Inf
 ## sample estimates:
 ## odds ratio 
 ##   4.464485</code></pre>

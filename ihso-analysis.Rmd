@@ -213,7 +213,7 @@ p2
 con_tab %>% lapply(., function(x) prop.table(x, margin = 1)) 
 
 # determine whether the odds of their occurrence is different using fisher test
-con_tab %>% lapply(., fisher.test)
+con_tab %>% lapply(., fisher.test, alternative = 'greater')
 ```
 
 ```{r, message=FALSE, warning=FALSE}
