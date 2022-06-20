@@ -1,5 +1,5 @@
 ---
-title: "Impact of homelessness on surgical outcomes"
+title: "Impact of homelessness on surgical outcomes - VAS"
 output:
   html_document:
     toc: true
@@ -125,6 +125,10 @@ homeless_data <- homeless_data %>%
     TRUE                                    ~ as.character(spec)
   ) %>% as.factor())
 
+# only focus on vascular patients
+homeless_data <- homeless_data %>%
+  filter(spec == "VAS")
+
 # skim set by status group
 homeless_data %>%
   group_by(status) %>%
@@ -176,11 +180,7 @@ p1 <- homeless_data %>%
 p1
 
 # conduct test to find whether medians are different
-wilcox.test(age ~ status, data = homeless_data)
-
-homeless_data %>%
-  group_by(status) %>%
-  summarise(age_median = median(age))
+kruskal.test(age ~ status, data = homeless_data)
 ```
 
 ### Categorical confounders
@@ -256,6 +256,28 @@ comp_glm_final %>%
 # transform the coefficients into risk factors
 comp_glm_final %>%
   with(cbind(exp(coefficients(.)), exp(confint(.))))
+
+# transform the coefficients into risk factors
+thing <- comp_glm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot1 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('Complication') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot1
 ```
 
 ### Mortality
@@ -281,6 +303,28 @@ mort_glm_final <- glm(mortality ~ age + sex,
 # get interesting stuff into a df
 mort_glm_final %>%
   summ(confint = TRUE, digits = 3)
+
+# transform the coefficients into risk factors
+thing <- mort_glm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot2 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('Mortality') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot2
 ```
 
 ### Length of Stay
@@ -290,9 +334,9 @@ To determine the effects on a patient's length of stay, we fit linear models to 
 ```{r, message=FALSE, warning=FALSE}
 # new log transformed outcome variable
 homeless_data <- homeless_data %>%
-  mutate(ln_los = log(los))
+  mutate(los_trans = log(los))
 
-los_lm <- lm(ln_los ~ status + age + sex + da_disorder + mental_illness,
+los_lm <- lm(los_trans ~ status + age + sex + da_disorder + mental_illness,
              data = homeless_data)
 
 los_lm_summary <- los_lm %>% summary
@@ -302,12 +346,34 @@ los_lm_summary
 We observe that the variable `sex` (P = `r los_lm_summary $coefficients["sexM", 4]`) didn't contribute to the model. As such we eliminate the terms from the modelling to reach our final model.
 
 ```{r, message=FALSE, warning=FALSE}
-los_lm_final <- lm(ln_los ~ status + age + da_disorder + mental_illness,
+los_lm_final <- lm(los_trans ~ status + age + da_disorder + mental_illness,
                    data = homeless_data)
 
 # get interesting stuff into a df
 los_lm_final %>%
   summ(confint = TRUE, digits = 3)
+
+# transform the coefficients into risk factors
+thing <- los_lm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot3 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('Length of stay') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot3
 ```
 
 ### ICU Admission
@@ -333,6 +399,28 @@ icu_glm_final <- glm(icu_admission ~ age + sex + da_disorder + mental_illness,
 # get interesting stuff into a df
 icu_glm_final %>%
   summ(confint = TRUE, digits = 3)
+
+# transform the coefficients into risk factors
+thing <- icu_glm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot4 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('ICU Admission') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot4
 ```
 
 ### ICU Hours
@@ -364,6 +452,28 @@ icu_lm_final %>%
 # transform the coefficients into risk factors
 icu_lm_final %>%
   with(cbind(exp(coefficients(.)), exp(confint(.))))
+
+# transform the coefficients into risk factors
+thing <- icu_lm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot5 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('ICU Hours') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot5
 ```
 
 ### Discharge against medical advice
@@ -389,72 +499,41 @@ daor_glm_final <- glm(daor ~ status + age + sex + da_disorder,
 # get interesting stuff into a df
 daor_glm_final %>%
   summ(confint = TRUE, digits = 3)
+
+# transform the coefficients into risk factors
+thing <- daor_glm_final %>%
+  with(cbind(exp(coefficients(.)), exp(confint(.)))) %>% as.data.frame() %>%
+  mutate(variable = rownames(.)) %>%
+  rename("effect_size" = "V1") %>%
+  filter(variable != "(Intercept)")
+
+thing
+
+risk_plot6 <- ggplot(thing, aes(x = variable, y = effect_size)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
+  xlab('Discharge against medical advice') +
+  ylab('') +
+  ylim(0,7) +
+  #scale_y_continuous(breaks= 0:7) +
+  scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+  coord_flip() +
+  theme_minimal()
+  
+risk_plot6
 ```
-
-## get all the models together, derive their risk factors and plot them together
-
-```{r}
-# derive the risk factors from the model coefficients
-risks_from_coefs <- function(model, risk_factors = F){
-  
-  # get the coefficients into a df
-  model_coefs <- model %>%
-    with(cbind(coefficients(.), confint(.))) %>% as.data.frame() %>%
-    mutate(variable = rownames(.)) %>%
-    rename("effect_size" = "V1") %>%
-    filter(variable != "(Intercept)")
-  
-  # do you want to return the coefficients as risk factors?
-  if(risk_factors == T){
-    
-    model_coefs <- model_coefs %>%
-      mutate_if(is.numeric, list(exp))
-    
-  }
-  
-  return(model_coefs)
-  
-}
-
-lapply(list(comp_glm_final, mort_glm_final, los_lm_final, icu_glm_final, daor_glm_final), risks_from_coefs, risk_factors = T)
-```
-
 
 ```{r, message=FALSE, warning=FALSE}
-graph_func <- function(model){
-  
-  # get the coefficients from the model
-  model_coefs <- risks_from_coefs(model)
+# combine the graphs together
+risk_plots <- ggarrange(risk_plot1, risk_plot2, risk_plot3, risk_plot4, risk_plot6,
+          ncol = 1,
+          widths = c(1, 1, 1, 1, 1, 1),
+          common.legend = T,
+          legend = "bottom")
 
-  # plot them out
-  coef_plot <- ggplot(model_coefs, aes(x = variable, y = effect_size)) +
-    geom_point() +
-    geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
-    xlab(str_to_title(str_replace_all(model$terms[[2]], "[[:punct:]]", " "))) +
-    ylab('') +
-    ylim(-2,2) +
-    scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
-    coord_flip() +
-    theme_minimal()
-
-  return(coef_plot)
-  
-}
-
-coefficient_graphs <- lapply(list(comp_glm_final, mort_glm_final, los_lm_final, icu_glm_final, daor_glm_final), graph_func)
-
-coef_plots <- ggarrange(
-  coefficient_graphs[[1]], coefficient_graphs[[2]], coefficient_graphs[[3]], coefficient_graphs[[4]], coefficient_graphs[[5]],
-  ncol = 1,
-  widths = rep(1, length(coefficient_graphs)),
-  common.legend = T,
-  legend = "bottom"
-  )
-
-coef_plots
-annotate_figure(coef_plots,
-                top = text_grob("Model coefficients"),
-                bottom = text_grob("Estimate"))
+annotate_figure(risk_plots,
+                top = text_grob("Derived risk factors from models"),
+                bottom = text_grob("Risk Factor"))
 ```
 
 
@@ -484,3 +563,7 @@ surg_tab %>% chisq.test()
 # post hoc analysis showing where the differences are
 surg_tab %>% chisq.posthoc.test()
 ```
+
+# Conclusions
+
+By fitting sets of models to our outcome variables, we have determined that homelessness only affects a patient's length of stay and risk of Discharge against medical advice. All other analysed outcomes are associated with other confounding variables that are often associated with homelessness itself.
