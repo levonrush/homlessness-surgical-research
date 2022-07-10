@@ -400,17 +400,18 @@ risks_from_coefs <- function(model, risk_factors = F){
   # get the coefficients into a df
   model_coefs <- model %>%
     with(cbind(coefficients(.), confint(.))) %>% as.data.frame() %>%
+    mutate_if(is.numeric, list(exp)) %>%
     mutate(variable = rownames(.)) %>%
     rename("effect_size" = "V1") %>%
     filter(variable != "(Intercept)")
   
-  # do you want to return the coefficients as risk factors?
-  if(risk_factors == T){
-    
-    model_coefs <- model_coefs %>%
-      mutate_if(is.numeric, list(exp))
-    
-  }
+  # # do you want to return the coefficients as risk factors?
+  # if(risk_factors == T){
+  #   
+  #   model_coefs <- model_coefs %>%
+  #     mutate_if(is.numeric, list(exp))
+  #   
+  # }
   
   return(model_coefs)
   
@@ -432,8 +433,8 @@ graph_func <- function(model){
     geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), width = 0.1) +
     xlab(str_to_title(str_replace_all(model$terms[[2]], "[[:punct:]]", " "))) +
     ylab('') +
-    ylim(-2,2) +
-    scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "D&A disorder", "mental_illnessTRUE" = "Mental illness")) +
+    ylim(0.5,7) +
+    scale_x_discrete(labels = c("statushomeless" = "Homeless", "age" = "Age (10 years)", "sexM" = "Male", "da_disorderTRUE" = "Substance use disorder", "mental_illnessTRUE" = "Mental illness")) +
     coord_flip() +
     theme_minimal()
 
@@ -453,7 +454,7 @@ coef_plots <- ggarrange(
 
 coef_plots
 annotate_figure(coef_plots,
-                top = text_grob("Model coefficients"),
+                top = text_grob("Derived risk factors from models"),
                 bottom = text_grob("Estimate"))
 ```
 
